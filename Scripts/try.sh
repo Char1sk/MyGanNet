@@ -1,8 +1,8 @@
-# debug train.py in Local or Colab
+# try train.py in Colab to see results
 set -ex
-if [ -z "$1" ]; then name="exp_debug"; else name=$1; fi;
+if [ -z "$1" ]; then name="try"; else name=$1; fi;
 python ./train.py                                                                   \
     --log_name ${name}                                                              \
     --delta 1 --lamda 1 --gamma 1                                                   \
-    --epochs 10 --batch_size 2                                                      \
-    --test_start 5 --test_period 5                                                  \
+    --epochs 200 --batch_size 16                                                    \
+    --test_start 20 --test_period 20                                                \

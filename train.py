@@ -46,7 +46,6 @@ def main():
         
         ### Batch Step
         for (i, data) in enumerate(trainLoader,1):
-            print(i)
             inputs, labels = [d.to(device) for d in data]
             gan.do_forward(inputs)
             gan.optimize_step(inputs, labels, epoch_record)
