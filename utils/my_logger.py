@@ -31,16 +31,35 @@ def get_logger(logDir:str) -> logging.Logger:
 
 def log_loss(logger:logging.Logger, record:LossRecord, epoch:int) -> None:
     logger.info(f'Epoch: {epoch:>3d};' +
-                f' D loss: {record.D:>7.5f};'       +
-                f' G loss: {record.G:>7.5f};'       +
-                f' GAdv loss: {record.GAdv:>7.5f};' +
-                f' GPxl loss: {record.GPxl:>7.5f};' +
-                f' GPer loss: {record.GPer:>7.5f};' + '\n')
+                f' [D] loss: {record.D:>7.5f};' )
+    
+    logger.info(f' [G  ]:' + 
+                f' Total loss: {record.Gtotal.G:>7.5f}'  +
+                f' Adv loss: {record.Gtotal.GAdv:>7.5f}' +
+                f' Pxl loss: {record.Gtotal.GPxl:>7.5f}' +
+                f' Per loss: {record.Gtotal.GPer:>7.5f}' )
+    
+    names = ['g ', 'tl', 'tr', 'd ']
+    for i in range(4):
+        logger.info(f' [G{names[i]}]:' + 
+                    f' Total loss: {record.Gparts[i].G:>7.5f}'  +
+                    f' Adv loss: {record.Gparts[i].GAdv:>7.5f}' +
+                    f' Pxl loss: {record.Gparts[i].GPxl:>7.5f}' +
+                    f' Per loss: {record.Gparts[i].GPer:>7.5f}' +
+                    ("\n" if i==3 else "") )
 
 
-def write_loss(writer, record:LossRecord, tag2:str, step:int) -> None:
-    writer.add_scalar(f'D_loss/{tag2}', record.D, step)
-    writer.add_scalar(f'G_loss/{tag2}', record.G, step)
-    writer.add_scalar(f'GAdv_loss/{tag2}', record.GAdv, step)
-    writer.add_scalar(f'GPxl_loss/{tag2}', record.GPxl, step)
-    writer.add_scalar(f'GPer_loss/{tag2}', record.GPer, step)
+def write_loss(writer, record:LossRecord, tag1:str, step:int) -> None:
+    writer.add_scalar(f'{tag1}_D/D_loss', record.D, step)
+    
+    writer.add_scalar(f'{tag1}_G/Total', record.Gtotal.G,    step)
+    writer.add_scalar(f'{tag1}_G/Adv',   record.Gtotal.GAdv, step)
+    writer.add_scalar(f'{tag1}_G/Pxl',   record.Gtotal.GPxl, step)
+    writer.add_scalar(f'{tag1}_G/Per',   record.Gtotal.GPer, step)
+    
+    names = ['g ', 'tl', 'tr', 'd ']
+    for i in range(4):
+        writer.add_scalar(f'{tag1}_G_{names[i]}/Total', record.Gparts[i].G,    step)
+        writer.add_scalar(f'{tag1}_G_{names[i]}/Adv',   record.Gparts[i].GAdv, step)
+        writer.add_scalar(f'{tag1}_G_{names[i]}/Pxl',   record.Gparts[i].GPxl, step)
+        writer.add_scalar(f'{tag1}_G_{names[i]}/Per',   record.Gparts[i].GPer, step)

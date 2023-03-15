@@ -51,7 +51,7 @@ def main():
             gan.optimize_step(inputs, labels, epoch_record)
         
         ### Record Log
-        epoch_record.div(len(trainLoader))
+        epoch_record.divall(len(trainLoader))
         log_loss(logger, epoch_record, epoch)
         write_loss(writer, epoch_record, 'train_epoch', epoch)
         
@@ -76,7 +76,7 @@ def main():
                     if i in opt.train_show_list:
                         writer.add_image(f'gen_photos_train/{i}', preds.squeeze(0), epoch)
                     torchvision.utils.save_image(preds, f'{saveDir}/{i}.jpg', normalize=True, scale_each=True)
-                train_record.div(len(train_testLoader))
+                train_record.divall(len(train_testLoader))
                 
                 fid = get_fid(saveDir, get_paths_from_list(opt.data_folder, opt.train_photo_list), path=opt.inception_model)
                 logger.info(f'Epoch: {epoch:>3d}; FID: {fid:>9.5f};')
@@ -101,7 +101,7 @@ def main():
                     if i in opt.test_show_list:
                         writer.add_image(f'gen_photos_test/{i}', preds.squeeze(0), epoch)
                     torchvision.utils.save_image(preds, f'{saveDir}/{i}.jpg', normalize=True, scale_each=True)
-                test_record.div(len(testLoader))
+                test_record.divall(len(testLoader))
                 
                 fid = get_fid(saveDir, get_paths_from_list(opt.data_folder, opt.test_photo_list), path=opt.inception_model)
                 logger.info(f'Epoch: {epoch:>3d}; FID: {fid:>9.5f};')

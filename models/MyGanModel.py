@@ -86,7 +86,7 @@ class MyGanModel():
         loss_D = (loss_D_fake + loss_D_real) * 0.5
         
         loss_D.backward()
-        record.add(loss_D.item(), 0, 0, 0, 0)
+        record.D += loss_D.item()
     
     
     def backward_G(self, input:Tensor, label:Tensor, record:LossRecord, do_back:bool=True) -> None:
@@ -102,14 +102,18 @@ class MyGanModel():
         for i in range(len(real_parts)):
             fake_pair = torch.cat([input_parts[i], fake_parts_final[i]], dim=1)
             fake_judge = self.D_list[i](fake_pair)
-            loss_G_adv += self.opt.delta * self.criterion_adv(fake_judge, True)
-            loss_G_pxl += self.opt.lamda * self.criterion_pxl(fake_parts_inter[i], real_parts[i])
-            loss_G_per += self.opt.gamma * self.criterion_per(fake_parts_inter[i], real_parts[i])
+            loss_adv = self.opt.delta * self.criterion_adv(fake_judge, True)
+            loss_pxl = self.opt.lamda * self.criterion_pxl(fake_parts_inter[i], real_parts[i])
+            loss_per = self.opt.gamma * self.criterion_per(fake_parts_inter[i], real_parts[i])
+            loss_G_adv += loss_adv
+            loss_G_pxl += loss_pxl
+            loss_G_per += loss_per
+            record.Gparts[i].add(loss_adv.item(), loss_pxl.item(), loss_per.item())
         loss_G = loss_G_adv + loss_G_pxl + loss_G_per
         
         if do_back:
             loss_G.backward()
-        record.add(0 ,loss_G.item() ,loss_G_adv.item() ,loss_G_pxl.item() ,loss_G_per.item() )
+        record.Gtotal.add(loss_G_adv.item(), loss_G_pxl.item(), loss_G_per.item())
     
     
     def optimize_step(self, input:Tensor, label:Tensor, record:LossRecord) -> None:
