@@ -50,7 +50,7 @@ def getInputs(path:str, shape:int, trans:transforms.Compose=None) -> torch.Tenso
     if trans is None:
         trans = transforms.Compose([
             transforms.ToTensor(),
-            transforms.Pad(shapes),
+            # transforms.Pad(shapes),
             transforms.Normalize(0.6022, 0.4003)
         ])
     img = trans(img)
@@ -68,7 +68,7 @@ def getLabels(path:str, shape:int, trans:transforms.Compose=None) -> torch.Tenso
     if trans is None:
         trans = transforms.Compose([
             transforms.ToTensor(),
-            transforms.Pad(shapes)
+            # transforms.Pad(shapes),
         ])
     img = trans(img)
     # tensor

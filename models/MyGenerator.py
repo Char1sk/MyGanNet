@@ -75,10 +75,14 @@ class MyUnetBlock(nn.Module):
             self.model = nn.Sequential(down, sub_module, up)
     
     def forward(self, x:Tensor) -> Tensor:
-        # print('in', x.shape)
         if self.is_outer_most:
             fx = (self.model(x)+1) / 2
-            # print('out', fx.shape)
+            if x.shape != fx.shape:
+                pt = (x.size(2) - fx.size(2)) // 2
+                pd = x.size(2) - fx.size(2) - pt
+                pl = (x.size(3) - fx.size(3)) // 2
+                pr = x.size(3) - fx.size(3) - pl
+                fx = F.pad(fx, [pl, pr, pt, pd])
             return fx
         else:
             fx = self.model(x)
@@ -88,7 +92,6 @@ class MyUnetBlock(nn.Module):
                 pl = (x.size(3) - fx.size(3)) // 2
                 pr = x.size(3) - fx.size(3) - pl
                 fx = F.pad(fx, [pl, pr, pt, pd])
-            # print('out', torch.cat([x, fx], dim=1).shape)
             return torch.cat([x, fx], dim=1)
 
 
