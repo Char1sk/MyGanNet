@@ -57,9 +57,9 @@ def main():
         
         ### Every Epoch Period: Train FID, Test Loss/FID, and Save
         if epoch >= opt.test_start and (epoch-opt.test_start) % opt.test_period == 0:
-            gan.set_models_train(False)
+            # gan.set_models_train(False)
             
-            ### Train FID/Image
+            ### Train Loss/FID/Image
             logger.info('=========== Train Set ==========')
             with torch.no_grad():
                 
@@ -67,16 +67,21 @@ def main():
                 if not os.path.exists(saveDir):
                     os.makedirs(saveDir)
                 
+                train_record = LossRecord()
                 for (i, data) in enumerate(train_testLoader, 1):
-                    inputs, _ = [d.to(device) for d in data]
+                    inputs, labels = [d.to(device) for d in data]
                     preds = gan.do_forward(inputs)
+                    gan.backward_G(inputs, labels, train_record, False)
                     
                     if i in opt.train_show_list:
                         writer.add_image(f'gen_photos_train/{i}', preds.squeeze(0), epoch)
                     torchvision.utils.save_image(preds, f'{saveDir}/{i}.jpg', normalize=True, scale_each=True)
+                train_record.div(len(train_testLoader))
                 
                 fid = get_fid(saveDir, get_paths_from_list(opt.data_folder, opt.train_photo_list), path=opt.inception_model)
                 logger.info(f'Epoch: {epoch:>3d}; FID: {fid:>9.5f};')
+                log_loss(logger, train_record, epoch)
+                write_loss(writer, train_record, 'train_test', epoch)
                 writer.add_scalar('FID/train', fid, epoch)
             
             ### Test *Loss*/FID/Image
@@ -87,23 +92,28 @@ def main():
                 if not os.path.exists(saveDir):
                     os.makedirs(saveDir)
                 
+                test_record = LossRecord()
                 for (i, data) in enumerate(testLoader, 1):
-                    inputs, _ = [d.to(device) for d in data]
+                    inputs, labels = [d.to(device) for d in data]
                     preds = gan.do_forward(inputs)
+                    gan.backward_G(inputs, labels, test_record, False)
                     
                     if i in opt.test_show_list:
                         writer.add_image(f'gen_photos_test/{i}', preds.squeeze(0), epoch)
                     torchvision.utils.save_image(preds, f'{saveDir}/{i}.jpg', normalize=True, scale_each=True)
+                test_record.div(len(testLoader))
                 
                 fid = get_fid(saveDir, get_paths_from_list(opt.data_folder, opt.test_photo_list), path=opt.inception_model)
                 logger.info(f'Epoch: {epoch:>3d}; FID: {fid:>9.5f};')
+                log_loss(logger, test_record, epoch)
+                write_loss(writer, test_record, 'test_test', epoch)
                 writer.add_scalar('FID/test', fid, epoch)
             
             ### Save Models
             if opt.save_models:
                 gan.save_models(opt.model_saves_folder, epoch)
             
-            gan.set_models_train(True)
+            # gan.set_models_train(True)
 
 
 if __name__ == "__main__":

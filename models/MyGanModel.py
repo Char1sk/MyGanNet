@@ -72,7 +72,7 @@ class MyGanModel():
         # NOTE adv_loss calculates final image and its parts
         input_parts = (input, *partition_image(input, self.opt.h_ratio, self.opt.w_ratio))
         real_parts  = (label, *partition_image(label, self.opt.h_ratio, self.opt.w_ratio))
-        fake_parts_final = (self.pred_global, *partition_image(self.pred_global, self.opt.h_ratio, self.opt.w_ratio))
+        fake_parts_final = (self.pred, *partition_image(self.pred, self.opt.h_ratio, self.opt.w_ratio))
         
         loss_D_fake = 0.0
         loss_D_real = 0.0
@@ -89,12 +89,12 @@ class MyGanModel():
         record.add(loss_D.item(), 0, 0, 0, 0)
     
     
-    def backward_G(self, input:Tensor, label:Tensor, record:LossRecord) -> None:
+    def backward_G(self, input:Tensor, label:Tensor, record:LossRecord, do_back:bool=True) -> None:
         '''Use results of do_forward to calculate loss & gradient of G'''
         input_parts = (input, *partition_image(input, self.opt.h_ratio, self.opt.w_ratio))
         real_parts  = (label, *partition_image(label, self.opt.h_ratio, self.opt.w_ratio))
-        fake_parts_inter = (self.pred_global, self.pred_local_tl, self.pred_local_tr, self.pred_local_d)
-        fake_parts_final = (self.pred_global, *partition_image(self.pred_global, self.opt.h_ratio, self.opt.w_ratio))
+        fake_parts_inter = (self.pred, self.pred_local_tl, self.pred_local_tr, self.pred_local_d)
+        fake_parts_final = (self.pred, *partition_image(self.pred, self.opt.h_ratio, self.opt.w_ratio))
         
         loss_G_adv = 0.0
         loss_G_pxl = 0.0
@@ -102,12 +102,13 @@ class MyGanModel():
         for i in range(len(real_parts)):
             fake_pair = torch.cat([input_parts[i], fake_parts_final[i]], dim=1)
             fake_judge = self.D_list[i](fake_pair)
-            loss_G_adv += self.criterion_adv(fake_judge, True)
-            loss_G_pxl += self.criterion_pxl(fake_parts_inter[i], real_parts[i])
-            loss_G_per += self.criterion_per(fake_parts_inter[i], real_parts[i])
+            loss_G_adv += self.opt.delta * self.criterion_adv(fake_judge, True)
+            loss_G_pxl += self.opt.lamda * self.criterion_pxl(fake_parts_inter[i], real_parts[i])
+            loss_G_per += self.opt.gamma * self.criterion_per(fake_parts_inter[i], real_parts[i])
         loss_G = loss_G_adv + loss_G_pxl + loss_G_per
         
-        loss_G.backward()
+        if do_back:
+            loss_G.backward()
         record.add(0 ,loss_G.item() ,loss_G_adv.item() ,loss_G_pxl.item() ,loss_G_per.item() )
     
     
