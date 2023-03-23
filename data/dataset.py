@@ -62,7 +62,7 @@ def getLabels(path:str, shape:int, trans:transforms.Compose=None) -> torch.Tenso
     # img: H*W*3 (BGR) numpy
     img = cv2.imread(path)
     # img: H*W*3 (RGB) numpy
-    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     # img: 3*SHAPE*SHAPE (RGB) tensor [0.0, 1.0]
     shapes = getPadShape(img.shape, shape)
     if trans is None:

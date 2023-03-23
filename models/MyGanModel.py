@@ -23,7 +23,7 @@ class MyGanModel():
         self.opt = opt
         self.isTrain = isTrain
         
-        self.G_global   = MyGenerator(opt.input_nc, opt.output_nc, num_downs=8).to(device).apply(weights_init)
+        self.G_global   = MyGenerator(opt.input_nc, opt.output_nc, num_downs=7).to(device).apply(weights_init)
         self.G_local_tl = MyGenerator(opt.input_nc, opt.output_nc, num_downs=4).to(device).apply(weights_init)
         self.G_local_tr = MyGenerator(opt.input_nc, opt.output_nc, num_downs=4).to(device).apply(weights_init)
         self.G_local_d  = MyGenerator(opt.input_nc, opt.output_nc, num_downs=4).to(device).apply(weights_init)
@@ -137,11 +137,25 @@ class MyGanModel():
     def save_models(self, folder:str, epoch:int) -> None:
         if not os.path.exists(self.opt.model_saves_folder):
             os.makedirs(self.opt.model_saves_folder)
-        # Disc_out_path = os.path.join(self.opt.model_saves_folder, f'Disc_epoch_{epoch}.weight')
-        # torch.save(Disc.state_dict(), Disc_out_path)
-        # GenD_out_path = os.path.join(self.opt.model_saves_folder, f'GenD_epoch_{epoch}.weight')
-        # torch.save(GenD.state_dict(), GenD_out_path)
-        # GenAppE_out_path = os.path.join(self.opt.model_saves_folder, f'GenAppE_epoch_{epoch}.weight')
-        # torch.save(GenAppE.state_dict(), GenAppE_out_path)
-        # GenComE_out_path = os.path.join(self.opt.model_saves_folder, f'GenComE_epoch_{epoch}.weight')
-        # torch.save(GenComE.state_dict(), GenComE_out_path)
+        
+        # Save G
+        G_global_path   = os.path.join(folder, f'G_global_epoch_{epoch}.weight')
+        G_local_tl_path = os.path.join(folder, f'G_local_tl_epoch_{epoch}.weight')
+        G_local_tr_path = os.path.join(folder, f'G_local_tr_epoch_{epoch}.weight')
+        G_local_d_path  = os.path.join(folder, f'G_local_d_epoch_{epoch}.weight')
+        G_combiner_path = os.path.join(folder, f'G_combiner_epoch_{epoch}.weight')
+        torch.save(self.G_global.state_dict(),   G_global_path)
+        torch.save(self.G_local_tl.state_dict(), G_local_tl_path)
+        torch.save(self.G_local_tr.state_dict(), G_local_tr_path)
+        torch.save(self.G_local_d.state_dict(),  G_local_d_path)
+        torch.save(self.G_combiner.state_dict(), G_combiner_path)
+        
+        # Save D
+        D_global_path   = os.path.join(folder, f'D_global_epoch_{epoch}.weight')
+        D_local_tl_path = os.path.join(folder, f'D_local_tl_epoch_{epoch}.weight')
+        D_local_tr_path = os.path.join(folder, f'D_local_tr_epoch_{epoch}.weight')
+        D_local_d_path  = os.path.join(folder, f'D_local_d_epoch_{epoch}.weight')
+        torch.save(self.D_global.state_dict(),   D_global_path)
+        torch.save(self.D_local_tl.state_dict(), D_local_tl_path)
+        torch.save(self.D_local_tr.state_dict(), D_local_tr_path)
+        torch.save(self.D_local_d.state_dict(),  D_local_d_path)

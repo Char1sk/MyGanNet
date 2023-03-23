@@ -13,7 +13,7 @@ class MyGenerator(nn.Module):
         # innermost
         model = None
         # nc not increasing
-        for _ in range(num_downs-increasing_times-2):
+        for _ in range(num_downs-increasing_times-1):
             model = MyUnetBlock(nc, nc, nc, is_inner_most=(model is None),
                                 sub_module=model, norm_layer=norm_layer)
         # nc increasing
