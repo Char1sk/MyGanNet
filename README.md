@@ -21,6 +21,7 @@ adv_all, adv_parts -->
 ## 一些结论
 
 - MSE比BCE好
+- random-size能排除padding，指标更高
 - inter比final对Adv好
   - 图像质量更好，割裂感弱
   - 指标没有明显变化(可能是save)

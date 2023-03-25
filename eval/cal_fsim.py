@@ -73,7 +73,7 @@ if __name__ == '__main__':
     # img_pp = read_img_as_tensor_numpy('./eval/1pp.jpg')
     
     l1 = get_file_list_from_file_list('../Datasets/My-CUFS-New/', 'files/test/list_photo.txt')
-    l2 = get_file_list_from_folder('./Saves/Images/train_first_04/Test/700')
+    l2 = get_file_list_from_folder('./Saves/Images/train_first_05/Test/400')
     f = eval_avg_fsim(l1, l2)
     print('avg: ', f)
     

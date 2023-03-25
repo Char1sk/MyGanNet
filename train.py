@@ -81,7 +81,7 @@ def main():
                     fsim += cal_fsim_with_tensors(labels, preds)
                     if i in opt.train_show_list:
                         writer.add_image(f'gen_photos_train/{i}', preds.squeeze(0), epoch)
-                    torchvision.utils.save_image(preds, f'{saveDir}/{i}.jpg', normalize=True, scale_each=True)
+                    torchvision.utils.save_image(preds, f'{saveDir}/{i}.jpg')
                 train_record.divall(len(train_testLoader))
                 fsim /= len(train_testLoader)
                 
@@ -110,7 +110,7 @@ def main():
                     fsim += cal_fsim_with_tensors(labels, preds)
                     if i in opt.test_show_list:
                         writer.add_image(f'gen_photos_test/{i}', preds.squeeze(0), epoch)
-                    torchvision.utils.save_image(preds, f'{saveDir}/{i}.jpg', normalize=True, scale_each=True)
+                    torchvision.utils.save_image(preds, f'{saveDir}/{i}.jpg')
                 test_record.divall(len(testLoader))
                 fsim /= len(testLoader)
                 fid = get_fid(saveDir, get_paths_from_list(opt.data_folder, opt.test_photo_list), path=opt.inception_model)
