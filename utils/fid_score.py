@@ -307,7 +307,7 @@ def get_folders_from_list(folder:str, file:str) -> List[str]:
 def get_paths_from_list(folder:str, file:str) -> Tuple[str]:  # NOT A FIXED LENGTH OF 1
     '''get a Tuple of file paths from a file-list'''
     with open(os.path.join(folder, file), 'r') as f:
-        l = [os.path.join(folder, line.strip()) for line in f.readlines()]
+        l = [os.path.join(folder, p.strip()) for p in f.readlines()]
     return tuple(l)
 
 
