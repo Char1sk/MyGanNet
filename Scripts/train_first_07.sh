@@ -1,6 +1,6 @@
-# no save norm; local_d layer 5
+# combiner layer 3
 set -ex
-if [ -z "$1" ]; then name="train_first_06"; else name=$1; fi;
+if [ -z "$1" ]; then name="train_first_07"; else name=$1; fi;
 python /kaggle/input/my-net/MyNet/train.py                                          \
     --log_name ${name}                                                              \
     --delta 1 --lamda 10 --gamma 5                                                  \
