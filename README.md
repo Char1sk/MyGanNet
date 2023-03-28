@@ -25,10 +25,9 @@ adv_all, adv_parts -->
 - inter比final对Adv好
   - 图像质量更好，割裂感弱
   - 指标没有明显变化(可能是save)
-- 对train拟合得更好
-- ld+似乎效果好点，但tb貌似有彩色噪点？
-  - 部分test-sample依然很差
-- gc+?
+- 对train拟合得更好，部分test-sample依然很差
+- ld+下半似乎效果好点，但tb貌似有彩色噪点？
+- gc+似乎没有明显优势，可能会过拟合
 
 ## 下步工作
 
