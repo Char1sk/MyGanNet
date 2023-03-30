@@ -3,11 +3,11 @@ from torch import Tensor
 from typing import Tuple
 
 
-def partition_image(img:Tensor, h_ratio:float, w_ratio:float, num_parts:int=3) -> Tuple[Tensor, Tensor, Tensor]:
+def partition_image(img:Tensor, h_ratio:float, w_ratio:float, architecture:str='SE') -> Tuple[Tensor, Tensor, Tensor]:
     # only works for C*H*W or B*C*H*W tensors
     h, w = img.shape[-2:]
     ht, wl = int(h*h_ratio), int(w*w_ratio)
-    if num_parts == 3:
+    if architecture == 'SE':
         if img.dim() == 3:
             img_tl = img[:, :ht, :wl]
             img_tr = img[:, :ht, wl:]
@@ -19,7 +19,7 @@ def partition_image(img:Tensor, h_ratio:float, w_ratio:float, num_parts:int=3) -
         else:
             print("DIM NOT CORRECT")
         return (img_tl, img_tr, img_d)
-    elif num_parts == 2:
+    elif architecture == 'DE':
         if img.dim() == 3:
             img_t = img[:, :ht, :]
             img_d = img[:, ht:, :]
@@ -29,6 +29,8 @@ def partition_image(img:Tensor, h_ratio:float, w_ratio:float, num_parts:int=3) -
         else:
             print("DIM NOT CORRECT")
         return (img_t, img_d)
+    elif architecture == 'TE':
+        return (img,)
         
 
 
