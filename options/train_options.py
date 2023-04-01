@@ -7,6 +7,7 @@ class TrainOptions(BaseOptions):
         self.parser.add_argument('--h_ratio', type=float, default=0.55, help='the ratio of upper parts')
         self.parser.add_argument('--w_ratio', type=float, default=0.5, help='the ratio of left parts')
         self.parser.add_argument('--architecture', default='SE', help='SE|DE|TE for local generator')
+        self.parser.add_argument('--all_D', action='store_true', help='using all 3 Discriminators in SE|DE|TE instead of 3|2|1')
         
         ## Dataset Path
         self.parser.add_argument('--data_folder', default='../Datasets/My-CUFS-New/', help='the dataset folder')

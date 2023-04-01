@@ -39,7 +39,7 @@ class MyGanModel():
             self.G_list = [self.G_global, self.G_local, self.G_combiner]
         
         self.D_global   = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
-        if self.opt.architecture == 'SE':
+        if self.opt.architecture == 'SE' or self.opt.all_D:
             self.D_local_tl = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
             self.D_local_tr = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
             self.D_local_d  = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
@@ -74,14 +74,14 @@ class MyGanModel():
         
         self.pred_global = self.G_global(x)
         if self.opt.architecture == 'SE':
-            self.pred_local_tl = self.G_local_tl(x_tl)
-            self.pred_local_tr = self.G_local_tr(x_tr)
-            self.pred_local_d  = self.G_local_d(x_d)
-            self.pred_local = concat_image(self.pred_local_tl, self.pred_local_tr, self.pred_local_d)
+            pred_local_tl = self.G_local_tl(x_tl)
+            pred_local_tr = self.G_local_tr(x_tr)
+            pred_local_d  = self.G_local_d(x_d)
+            self.pred_local = concat_image(pred_local_tl, pred_local_tr, pred_local_d)
         elif self.opt.architecture == 'DE':
-            self.pred_local_t  = self.G_local_t(x_tl, x_tr)
-            self.pred_local_d  = self.G_local_d(x_d)
-            self.pred_local = torch.cat([self.pred_local_t, self.pred_local_d], dim=2)
+            pred_local_t  = self.G_local_t(x_tl, x_tr)
+            pred_local_d  = self.G_local_d(x_d)
+            self.pred_local = torch.cat([pred_local_t, pred_local_d], dim=2)
         elif self.opt.architecture == 'TE':
             self.pred_local = self.G_local(x_tl, x_tr, x_d)
         self.pred = self.G_combiner(torch.cat([self.pred_global, self.pred_local], dim=1))
@@ -93,11 +93,10 @@ class MyGanModel():
         '''Use results of do_forward to calculate loss & gradient of D'''
         
         # NOTE adv_loss calculates final image and its parts
-        input_parts = (input, *partition_image(input, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture))
-        real_parts  = (label, *partition_image(label, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture))
-        fake_parts_inter = (self.pred, *partition_image(self.pred_local, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture))
+        input_parts = (input, *partition_image(input, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D))
+        real_parts  = (label, *partition_image(label, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D))
+        fake_parts_inter = (self.pred, *partition_image(self.pred_local, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D))
         # fake_parts_final = (self.pred, *partition_image(self.pred, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture))
-        # fake_parts_inter = (self.pred, self.pred_local_tl, self.pred_local_tr, self.pred_local_d)
         
         loss_D_fake = 0.0
         loss_D_real = 0.0
@@ -116,10 +115,10 @@ class MyGanModel():
     
     def backward_G(self, input:Tensor, label:Tensor, record:LossRecord, do_back:bool=True) -> None:
         '''Use results of do_forward to calculate loss & gradient of G'''
-        input_parts = (input, *partition_image(input, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture))
-        real_parts  = (label, *partition_image(label, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture))
-        fake_parts_inter = (self.pred, *partition_image(self.pred_local, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture))
-        fake_parts_final = (self.pred, *partition_image(self.pred, self.opt.h_ratio, self.opt.w_ratio))
+        input_parts = (input, *partition_image(input, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D))
+        real_parts  = (label, *partition_image(label, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D))
+        fake_parts_inter = (self.pred, *partition_image(self.pred_local, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D))
+        # fake_parts_final = (self.pred, *partition_image(self.pred, self.opt.h_ratio, self.opt.w_ratio))
         
         loss_G_adv = 0.0
         loss_G_pxl = 0.0
