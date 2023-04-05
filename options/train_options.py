@@ -19,7 +19,6 @@ class TrainOptions(BaseOptions):
         
         ## Data Description
         self.parser.add_argument('--input_nc', type=int, default=1, help='number of input sketch channels')
-        self.parser.add_argument('--conpt_nc', type=int, default=8, help='number of input conponents channels')
         self.parser.add_argument('--output_nc', type=int, default=3, help='number of output photo channels')
         self.parser.add_argument('--output_shape', type=int, default=256, help='shape of output photo')
         

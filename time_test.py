@@ -21,14 +21,18 @@ def main():
     # Model
     gan = MyGanModel(opt, isTrain=True, device=device)
     
-    beg = time.time()
     # Inference
-    for data in testLoader:
+    times = 100
+    total_time = 0.0
+    for (i,data) in enumerate(testLoader):
+        beg = time.time()
         inputs, _ = [d.to(device) for d in data]
         gan.do_forward(inputs)
-        break
-    end = time.time()
-    print(beg, end, end-beg)
+        end = time.time()
+        total_time += end-beg
+        if i == times:
+            break
+    print(total_time/times)
     
 
 

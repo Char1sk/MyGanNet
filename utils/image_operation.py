@@ -17,7 +17,7 @@ def partition_image(img:Tensor, h_ratio:float, w_ratio:float, architecture:str='
             img_tr = img[:, :, :ht, wl:]
             img_d = img[:, :, ht:, :]
         else:
-            print("DIM NOT CORRECT")
+            print("DIM NOT CORRECT", img.shape)
         return (img_tl, img_tr, img_d)
     elif architecture == 'DE':
         if img.dim() == 3:
@@ -27,7 +27,7 @@ def partition_image(img:Tensor, h_ratio:float, w_ratio:float, architecture:str='
             img_t = img[:, :, :ht, :]
             img_d = img[:, :, ht:, :]
         else:
-            print("DIM NOT CORRECT")
+            print("DIM NOT CORRECT", img.shape)
         return (img_t, img_d)
     elif architecture == 'TE':
         return (img,)
