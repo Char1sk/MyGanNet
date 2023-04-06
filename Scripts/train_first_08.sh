@@ -3,7 +3,8 @@ set -ex
 if [ -z "$1" ]; then name="train_first_08"; else name=$1; fi;
 python /kaggle/input/my-net/MyNet/train.py                                          \
     --log_name ${name}                                                              \
-    --num_parts 2                                                                   \
+    --architecture DE                                                               \
+    --ld_layer 5                                                                    \
     --delta 1 --lamda 10 --gamma 5                                                  \
     --epochs 400 --batch_size 12                                                    \
     --test_start 50 --test_period 50                                                \

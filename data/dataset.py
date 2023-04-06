@@ -27,8 +27,8 @@ class MyDataset(data.Dataset):
         inputPath = os.path.join(self.opt.data_folder, self.sketchNames[index])
         labelPath = os.path.join(self.opt.data_folder, self.photoNames[index])
         
-        inputs = getInputs(inputPath, self.opt.output_shape)
-        labels = getLabels(labelPath, self.opt.output_shape)
+        inputs = getInputs(inputPath, self.opt.output_shape, self.opt.pad)
+        labels = getLabels(labelPath, self.opt.output_shape, self.opt.pad)
         
         return (inputs, labels)
     
@@ -42,15 +42,15 @@ def getNames(path:str) -> List[str]:
     return ret
 
 
-def getInputs(path:str, shape:int, trans:transforms.Compose=None) -> torch.Tensor:
+def getInputs(path:str, shape:int, pad:bool=False, trans:transforms.Compose=None) -> torch.Tensor:
     # img: H*W numpy
     img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
     # img: 1*SHAPE*SHAPE tensor [0.0, 1.0]
-    shapes = getPadShape(img.shape, shape)
+    shapes = getPadShape(img.shape, shape) if pad else 0
     if trans is None:
         trans = transforms.Compose([
             transforms.ToTensor(),
-            # transforms.Pad(shapes),
+            transforms.Pad(shapes),
             transforms.Normalize(0.6022, 0.4003)
         ])
     img = trans(img)
@@ -58,17 +58,17 @@ def getInputs(path:str, shape:int, trans:transforms.Compose=None) -> torch.Tenso
     return img
 
 
-def getLabels(path:str, shape:int, trans:transforms.Compose=None) -> torch.Tensor:
+def getLabels(path:str, shape:int, pad:bool=False, trans:transforms.Compose=None) -> torch.Tensor:
     # img: H*W*3 (BGR) numpy
     img = cv2.imread(path)
     # img: H*W*3 (RGB) numpy
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     # img: 3*SHAPE*SHAPE (RGB) tensor [0.0, 1.0]
-    shapes = getPadShape(img.shape, shape)
+    shapes = getPadShape(img.shape, shape) if pad else 0
     if trans is None:
         trans = transforms.Compose([
             transforms.ToTensor(),
-            # transforms.Pad(shapes),
+            transforms.Pad(shapes),
         ])
     img = trans(img)
     # tensor

@@ -1,9 +1,10 @@
 # DE + all_D
 set -ex
-if [ -z "$1" ]; then name="train_first_10"; else name=$1; fi;
+if [ -z "$1" ]; then name="train_first_11"; else name=$1; fi;
 python /kaggle/input/my-net/MyNet/train.py                                          \
     --log_name ${name}                                                              \
     --architecture DE --all_D                                                       \
+    --ld_layer 5                                                                    \
     --delta 1 --lamda 10 --gamma 5                                                  \
     --epochs 400 --batch_size 12                                                    \
     --test_start 50 --test_period 50                                                \

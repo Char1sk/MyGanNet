@@ -25,15 +25,15 @@ class MyGanModel():
         self.isTrain = isTrain
         
         self.G_global   = MyGenerator(opt.input_nc, opt.output_nc, num_downs=7).to(device).apply(weights_init)
-        self.G_combiner = MyCombiner(2*opt.output_nc, opt.output_nc).to(device).apply(weights_init)
+        self.G_combiner = MyCombiner(2*opt.output_nc, opt.output_nc, num_res=self.opt.cb_layer).to(device).apply(weights_init)
         if self.opt.architecture == 'SE':
             self.G_local_tl = MyGenerator(opt.input_nc, opt.output_nc, num_downs=4).to(device).apply(weights_init)
             self.G_local_tr = MyGenerator(opt.input_nc, opt.output_nc, num_downs=4).to(device).apply(weights_init)
-            self.G_local_d  = MyGenerator(opt.input_nc, opt.output_nc, num_downs=5).to(device).apply(weights_init)
+            self.G_local_d  = MyGenerator(opt.input_nc, opt.output_nc, num_downs=self.opt.ld_layer).to(device).apply(weights_init)
             self.G_list = [self.G_global, self.G_local_tl, self.G_local_tr, self.G_local_d, self.G_combiner]
         elif self.opt.architecture == 'DE':
             self.G_local_t = MyGenerator(opt.input_nc, opt.output_nc, num_downs=4, architecture='DE').to(device).apply(weights_init)
-            self.G_local_d = MyGenerator(opt.input_nc, opt.output_nc, num_downs=5).to(device).apply(weights_init)
+            self.G_local_d = MyGenerator(opt.input_nc, opt.output_nc, num_downs=self.opt.ld_layer).to(device).apply(weights_init)
             self.G_list = [self.G_global, self.G_local_t, self.G_local_d, self.G_combiner]
         elif self.opt.architecture == 'TE':
             self.G_local = MyGenerator(opt.input_nc, opt.output_nc, num_downs=4, architecture='TE').to(device).apply(weights_init)

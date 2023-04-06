@@ -8,6 +8,8 @@ class TrainOptions(BaseOptions):
         self.parser.add_argument('--w_ratio', type=float, default=0.5, help='the ratio of left parts')
         self.parser.add_argument('--architecture', default='SE', help='SE|DE|TE for local generator')
         self.parser.add_argument('--all_D', action='store_true', help='using all 3 Discriminators in SE|DE|TE instead of 3|2|1')
+        self.parser.add_argument('--ld_layer', type=int, default=4, help='num_layer for G local down')
+        self.parser.add_argument('--cb_layer', type=int, default=2, help='num_layer for G combiner')
         
         ## Dataset Path
         self.parser.add_argument('--data_folder', default='../Datasets/My-CUFS-New/', help='the dataset folder')
@@ -20,6 +22,7 @@ class TrainOptions(BaseOptions):
         ## Data Description
         self.parser.add_argument('--input_nc', type=int, default=1, help='number of input sketch channels')
         self.parser.add_argument('--output_nc', type=int, default=3, help='number of output photo channels')
+        self.parser.add_argument('--pad', action='store_true', help='whether to zeropad to target size')
         self.parser.add_argument('--output_shape', type=int, default=256, help='shape of output photo')
         
         ## Model Path

@@ -46,61 +46,64 @@ adv_all, adv_parts -->
 
 ## 实验结果
 
-### 对比实验：Base SE DE TE
+- 工作量问题
+- 模型比较
+- 不稳定、指标不准
 
-- 处理背景、随机大小
-- 部分D、inter
-- L1、MSE、Per
+### 1. 对比实验：Base SE DE TE
 
-|  Model   | FID  | FSIM | Params | FLOPs | Time |
-| :------: | :--: | :--: | :----: | :---: | :--: |
-| Baseline |      |      |        |       |      |
-|    SE    |      |      |        |       |      |
-|    DE    |      |      |        |       |      |
-|    TE    |      |      |        |       |      |
+- 处理背景、随机大小；部分D、inter；L1、MSE、Per
 
-- D算不算Params/FLOPs？Time多少？
+|  Model   | FID$\darr$ | FSIM$\uarr$ | Params  |   FLOPs   |       Time        |
+| :------: | :--------: | :---------: | :-----: | :-------: | :---------------: |
+| Baseline |   100.4    |      -      | 83.69 M | 2*20.29 G | 2.90 s / 0.0449 s |
+|    SE    |   101.9    |   0.7771    | 60.52 M | 2*31.28 G | 1.19 s / 0.0456 s |
+|    DE    |   97.52    |   0.7876    | 57.10 M | 2*31.28 G | 1.27 s / 0.0448 s |
+|    TE    |   95.97    |   0.7850    | 53.69 M | 2*31.35 G | 1.16 s / 0.0443 s |
 
-### 消融实验：data, archi, loss
+- D算不算Params/FLOPs？Time多次/少次？
+- 不太有优势，不太稳
 
-#### 数据预处理
+### 2. 消融实验：data, archi, loss
+
+#### 2.1 数据预处理
 
 - Background
 - Shape
 
-|      | Background | Shape | FID  |
-| :--: | :--------: | :---: | :--: |
-| Base |     X      |   X   |      |
-| Base |     O      |   X   |      |
-| Base |     O      |   O   |      |
-|  SE  |     X      |   X   |      |
-|  SE  |     O      |   X   |      |
-|  SE  |     O      |   O   |      |
+|       | Background | Shape | FID$\darr$ |
+| :---: | :--------: | :---: | :--------: |
+| Base  |     X      |   X   |   297.7    |
+| Base  |     O      |   X   |   158.0    |
+| Base  |     O      |   O   |   100.4    |
+| SE 12 |     X      |   X   |     -      |
+| SE 02 |     O      |   X   |   166.4?   |
+| SE 03 |     O      |   O   |   112.7?   |
 
-#### 损失函数
+#### 2.2 损失函数
 
 - L1/L2
 - Perceptual
 - MSE/BCE
 
-| Adv  | Per  | Com  |  FID  |
-| :--: | :--: | :--: | :---: |
-| BCE  |  O   |  L1  |   -   |
-| MSE  |  X   |  L1  |   -   |
-| MSE  |  O   |  L2  |   -   |
-| MSE  |  O   |  L1  | 95.97 |
+| Adv  | Per  | Com  | FID$\darr$ |
+| :--: | :--: | :--: | :--------: |
+| BCE  |  O   |  L1  |     -      |
+| MSE  |  X   |  L1  |     -      |
+| MSE  |  O   |  L2  |     -      |
+| MSE  |  O   |  L1  |   95.97    |
 
-#### 模型架构
+#### 2.3 模型架构
 
 - SE DE TE
 - all_D/inter
 
-| Model | Dtype  |   FID   |  FSIM  | Params  |   FLOPs   |       Time        |
-| :---: | :----: | :-----: | :----: | :-----: | :-------: | :---------------: |
-|  SE   | global | 112.7 ? |   -    |    =    |     =     |         =         |
-|  SE   | inter  |  101.9  | 0.7771 | 60.52 M | 2*31.28 G | 1.19 s / 0.0444 s |
-|  DE   | local  |    -    |   -    |    =    |     =     |         =         |
-|  DE   | inter  |  97.52  | 0.7876 | 57.10 M | 2*31.28 G | 1.27 s / 0.0448 s |
-|  TE   | local  |  108.5  | 0.7775 |    =    |     =     |         =         |
-|  TE   | inter  |  95.97  | 0.7850 | 53.69 M | 2*31.35 G | 1.16 s / 0.0443 s |
+| Model | Dtype  | FID$\darr$ | FSIM$\uarr$ | Params  |   FLOPs   |       Time        |
+| :---: | :----: | :--------: | :---------: | :-----: | :-------: | :---------------: |
+|  SE   | global |  112.7 x   |      -      |    =    |     =     |         =         |
+|  SE   | inter  |   101.9    |   0.7771    | 60.52 M | 2*31.28 G | 1.19 s / 0.0444 s |
+|  DE   | local  |   95.59    |   0.7853    |    =    |     =     |         =         |
+|  DE   | inter  |   97.52    |   0.7876    | 57.10 M | 2*31.28 G | 1.27 s / 0.0448 s |
+|  TE   | local  |   108.5    |   0.7775    |    =    |     =     |         =         |
+|  TE   | inter  |   95.97    |   0.7850    | 53.69 M | 2*31.35 G | 1.16 s / 0.0443 s |
 

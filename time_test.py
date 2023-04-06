@@ -23,16 +23,14 @@ def main():
     
     # Inference
     times = 100
-    total_time = 0.0
+    beg = time.time()
     for (i,data) in enumerate(testLoader):
-        beg = time.time()
         inputs, _ = [d.to(device) for d in data]
         gan.do_forward(inputs)
-        end = time.time()
-        total_time += end-beg
         if i == times:
             break
-    print(total_time/times)
+    end = time.time()
+    print((end-beg)/times)
     
 
 
