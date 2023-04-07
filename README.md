@@ -76,7 +76,8 @@ adv_all, adv_parts -->
 | Base  |     X      |   X   |   297.7    |
 | Base  |     O      |   X   |   158.0    |
 | Base  |     O      |   O   |   100.4    |
-| SE 12 |     X      |   X   |     -      |
+| SE 13 |     X      |   X   |     -      |
+| SE 12 |     X      |   O   |   147.7    |
 | SE 02 |     O      |   X   |   166.4?   |
 | SE 03 |     O      |   O   |   112.7?   |
 
