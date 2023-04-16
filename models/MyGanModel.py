@@ -39,33 +39,34 @@ class MyGanModel():
             self.G_local = MyGenerator(opt.input_nc, opt.output_nc, num_downs=4, architecture='TE').to(device).apply(weights_init)
             self.G_list = [self.G_global, self.G_local, self.G_combiner]
         
-        self.D_global   = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
-        if self.opt.architecture == 'SE' or self.opt.all_D:
-            self.D_local_tl = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
-            self.D_local_tr = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
-            self.D_local_d  = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
-            self.D_list = [self.D_global, self.D_local_tl, self.D_local_tr, self.D_local_d]
-        elif self.opt.architecture == 'DE':
-            self.D_local_t = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
-            self.D_local_d = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
-            self.D_list = [self.D_global, self.D_local_t, self.D_local_d]
-        elif self.opt.architecture == 'TE':
-            self.D_local = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
-            self.D_list = [self.D_global, self.D_local]
-        
-        VGG = MyVggEncoder(opt.vgg_model).to(device)
-        self.criterion_adv = AdversarialLoss(device, opt.BCE)
-        self.criterion_pxl = PixelMatchLoss(device)
-        self.criterion_per = PerceptualLoss(VGG, opt.vgg_layers)
-        
-        G_param_list = []
-        for g in self.G_list:
-            G_param_list += list(g.parameters())
-        D_param_list = []
-        for d in self.D_list:
-            D_param_list += list(d.parameters())
-        self.optim_G = torch.optim.Adam(G_param_list, lr=opt.lr, betas=(opt.beta1, opt.beta2))
-        self.optim_D = torch.optim.Adam(D_param_list, lr=opt.lr, betas=(opt.beta1, opt.beta2))
+        if self.isTrain:
+            self.D_global   = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
+            if self.opt.architecture == 'SE' or self.opt.all_D:
+                self.D_local_tl = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
+                self.D_local_tr = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
+                self.D_local_d  = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
+                self.D_list = [self.D_global, self.D_local_tl, self.D_local_tr, self.D_local_d]
+            elif self.opt.architecture == 'DE':
+                self.D_local_t = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
+                self.D_local_d = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
+                self.D_list = [self.D_global, self.D_local_t, self.D_local_d]
+            elif self.opt.architecture == 'TE':
+                self.D_local = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
+                self.D_list = [self.D_global, self.D_local]
+            
+            VGG = MyVggEncoder(opt.vgg_model).to(device)
+            self.criterion_adv = AdversarialLoss(device, opt.BCE)
+            self.criterion_pxl = PixelMatchLoss(device)
+            self.criterion_per = PerceptualLoss(VGG, opt.vgg_layers)
+            
+            G_param_list = []
+            for g in self.G_list:
+                G_param_list += list(g.parameters())
+            D_param_list = []
+            for d in self.D_list:
+                D_param_list += list(d.parameters())
+            self.optim_G = torch.optim.Adam(G_param_list, lr=opt.lr, betas=(opt.beta1, opt.beta2))
+            self.optim_D = torch.optim.Adam(D_param_list, lr=opt.lr, betas=(opt.beta1, opt.beta2))
     
     
     def do_forward(self, x:Tensor) -> Tensor:
@@ -157,19 +158,22 @@ class MyGanModel():
     
     
     def set_models_train(self, is_train:bool) -> None:
-        set_models_eval(self.G_list+self.D_list, is_train)
+        set_models_eval(self.G_list, is_train)
+        if self.isTrain:
+            set_models_eval(self.D_list, is_train)
     
     
     def save_models(self, folder:str, epoch:int) -> None:
-        if not os.path.exists(self.opt.model_saves_folder):
-            os.makedirs(self.opt.model_saves_folder)
+        folder = os.path.join(folder, epoch)
+        if not os.path.exists(folder):
+            os.makedirs(folder)
         
         # Save G
-        G_global_path   = os.path.join(folder, f'G_global_epoch_{epoch}.weight')
-        G_local_tl_path = os.path.join(folder, f'G_local_tl_epoch_{epoch}.weight')
-        G_local_tr_path = os.path.join(folder, f'G_local_tr_epoch_{epoch}.weight')
-        G_local_d_path  = os.path.join(folder, f'G_local_d_epoch_{epoch}.weight')
-        G_combiner_path = os.path.join(folder, f'G_combiner_epoch_{epoch}.weight')
+        G_global_path   = os.path.join(folder, f'G_global.weight')
+        G_local_tl_path = os.path.join(folder, f'G_local_tl.weight')
+        G_local_tr_path = os.path.join(folder, f'G_local_tr.weight')
+        G_local_d_path  = os.path.join(folder, f'G_local_d.weight')
+        G_combiner_path = os.path.join(folder, f'G_combiner.weight')
         torch.save(self.G_global.state_dict(),   G_global_path)
         torch.save(self.G_local_tl.state_dict(), G_local_tl_path)
         torch.save(self.G_local_tr.state_dict(), G_local_tr_path)
@@ -177,14 +181,39 @@ class MyGanModel():
         torch.save(self.G_combiner.state_dict(), G_combiner_path)
         
         # Save D
-        D_global_path   = os.path.join(folder, f'D_global_epoch_{epoch}.weight')
-        D_local_tl_path = os.path.join(folder, f'D_local_tl_epoch_{epoch}.weight')
-        D_local_tr_path = os.path.join(folder, f'D_local_tr_epoch_{epoch}.weight')
-        D_local_d_path  = os.path.join(folder, f'D_local_d_epoch_{epoch}.weight')
+        D_global_path   = os.path.join(folder, f'D_global.weight')
+        D_local_tl_path = os.path.join(folder, f'D_local_tl.weight')
+        D_local_tr_path = os.path.join(folder, f'D_local_tr.weight')
+        D_local_d_path  = os.path.join(folder, f'D_local_d.weight')
         torch.save(self.D_global.state_dict(),   D_global_path)
         torch.save(self.D_local_tl.state_dict(), D_local_tl_path)
         torch.save(self.D_local_tr.state_dict(), D_local_tr_path)
         torch.save(self.D_local_d.state_dict(),  D_local_d_path)
+    
+    
+    def load_models(self, folder:str) -> None:
+        # Load G
+        G_global_path   = os.path.join(folder, f'G_global.weight')
+        G_local_tl_path = os.path.join(folder, f'G_local_tl.weight')
+        G_local_tr_path = os.path.join(folder, f'G_local_tr.weight')
+        G_local_d_path  = os.path.join(folder, f'G_local_d.weight')
+        G_combiner_path = os.path.join(folder, f'G_combiner.weight')
+        self.G_global.load_state_dict(torch.load(G_global_path))
+        self.G_local_tl.load_state_dict(torch.load(G_local_tl_path))
+        self.G_local_tr.load_state_dict(torch.load(G_local_tr_path))
+        self.G_local_d.load_state_dict(torch.load(G_local_d_path))
+        self.G_combiner.load_state_dict(torch.load(G_combiner_path))
+        
+        # Load D
+        if self.isTrain():
+            D_global_path   = os.path.join(folder, f'D_global.weight')
+            D_local_tl_path = os.path.join(folder, f'D_local_tl.weight')
+            D_local_tr_path = os.path.join(folder, f'D_local_tr.weight')
+            D_local_d_path  = os.path.join(folder, f'D_local_d.weight')
+            self.D_global.load_state_dict(torch.load(D_global_path))
+            self.D_local_tl.load_state_dict(torch.load(D_local_tl_path))
+            self.D_local_tr.load_state_dict(torch.load(D_local_tr_path))
+            self.D_local_d.load_state_dict(torch.load(D_local_d_path))
 
 
 class MyInferenceModel(nn.Module):
