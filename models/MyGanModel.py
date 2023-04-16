@@ -97,7 +97,10 @@ class MyGanModel():
         # NOTE adv_loss calculates final image and its parts
         input_parts = (input, *partition_image(input, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D))
         real_parts  = (label, *partition_image(label, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D))
-        fake_parts_inter = (self.pred, *partition_image(self.pred_local, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D))
+        if self.opt.architecture == 'SE' and self.opt.global_parts:
+            fake_parts_inter = (self.pred, *partition_image(self.pred, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D))
+        else:
+            fake_parts_inter = (self.pred, *partition_image(self.pred_local, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D))
         # fake_parts_final = (self.pred, *partition_image(self.pred, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture))
         
         loss_D_fake = 0.0
@@ -119,7 +122,10 @@ class MyGanModel():
         '''Use results of do_forward to calculate loss & gradient of G'''
         input_parts = (input, *partition_image(input, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D))
         real_parts  = (label, *partition_image(label, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D))
-        fake_parts_inter = (self.pred, *partition_image(self.pred_local, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D))
+        if self.opt.architecture == 'SE' and self.opt.global_parts:
+            fake_parts_inter = (self.pred, *partition_image(self.pred, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D))
+        else:
+            fake_parts_inter = (self.pred, *partition_image(self.pred_local, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D))
         # fake_parts_final = (self.pred, *partition_image(self.pred, self.opt.h_ratio, self.opt.w_ratio))
         
         loss_G_adv = 0.0
@@ -164,7 +170,7 @@ class MyGanModel():
     
     
     def save_models(self, folder:str, epoch:int) -> None:
-        folder = os.path.join(folder, epoch)
+        folder = os.path.join(folder, str(epoch))
         if not os.path.exists(folder):
             os.makedirs(folder)
         
@@ -205,7 +211,7 @@ class MyGanModel():
         self.G_combiner.load_state_dict(torch.load(G_combiner_path))
         
         # Load D
-        if self.isTrain():
+        if self.isTrain:
             D_global_path   = os.path.join(folder, f'D_global.weight')
             D_local_tl_path = os.path.join(folder, f'D_local_tl.weight')
             D_local_tr_path = os.path.join(folder, f'D_local_tr.weight')

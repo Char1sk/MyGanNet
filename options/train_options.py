@@ -8,6 +8,7 @@ class TrainOptions(BaseOptions):
         self.parser.add_argument('--w_ratio', type=float, default=0.5, help='the ratio of left parts')
         self.parser.add_argument('--architecture', default='SE', help='SE|DE|TE for local generator')
         self.parser.add_argument('--all_D', action='store_true', help='using all 3 Discriminators in SE|DE|TE instead of 3|2|1')
+        self.parser.add_argument('--global_parts', action='store_true', help='using global parts for SE')
         self.parser.add_argument('--ld_layer', type=int, default=4, help='num_layer for G local down')
         self.parser.add_argument('--cb_layer', type=int, default=2, help='num_layer for G combiner')
         
