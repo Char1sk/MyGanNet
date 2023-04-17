@@ -38,8 +38,8 @@ def main():
     
     # Model
     gan = MyGanModel(opt, isTrain=True, device=device)
-    # gan.save_models(opt.model_saves_folder, 114)
-    # gan.load_models(os.path.join(opt.model_saves_folder, '114'))
+    gan.save_models(opt.model_saves_folder, 114)
+    gan.load_models(os.path.join(opt.model_saves_folder, '114'))
     
     # Print Params
     logger.info(str(opt))

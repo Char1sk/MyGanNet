@@ -41,7 +41,7 @@ class MyGanModel():
         
         if self.isTrain:
             self.D_global   = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
-            if self.opt.architecture == 'SE' or self.opt.all_D:
+            if self.opt.architecture == 'SE' or self.opt.all_D or self.opt.global_parts:
                 self.D_local_tl = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
                 self.D_local_tr = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
                 self.D_local_d  = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
@@ -95,18 +95,17 @@ class MyGanModel():
         '''Use results of do_forward to calculate loss & gradient of D'''
         
         # NOTE adv_loss calculates final image and its parts
-        input_parts = (input, *partition_image(input, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D))
-        real_parts  = (label, *partition_image(label, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D))
-        if self.opt.architecture == 'SE' and self.opt.global_parts:
-            fake_parts_inter = (self.pred, *partition_image(self.pred, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D))
+        input_parts = (input, *partition_image(input, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D, self.opt.global_parts))
+        real_parts  = (label, *partition_image(label, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D, self.opt.global_parts))
+        if self.opt.global_parts:
+            fake_parts = (self.pred, *partition_image(self.pred, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D, self.opt.global_parts))
         else:
-            fake_parts_inter = (self.pred, *partition_image(self.pred_local, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D))
-        # fake_parts_final = (self.pred, *partition_image(self.pred, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture))
+            fake_parts = (self.pred, *partition_image(self.pred_local, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D, self.opt.global_parts))
         
         loss_D_fake = 0.0
         loss_D_real = 0.0
         for i in range(len(real_parts)):
-            fake_pair = torch.cat([input_parts[i], fake_parts_inter[i]], dim=1)
+            fake_pair = torch.cat([input_parts[i], fake_parts[i]], dim=1)
             real_pair = torch.cat([input_parts[i], real_parts[i]], dim=1)
             fake_judge = self.D_list[i](fake_pair.detach())
             real_judge = self.D_list[i](real_pair)
@@ -120,24 +119,23 @@ class MyGanModel():
     
     def backward_G(self, input:Tensor, label:Tensor, record:LossRecord, do_back:bool=True) -> None:
         '''Use results of do_forward to calculate loss & gradient of G'''
-        input_parts = (input, *partition_image(input, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D))
-        real_parts  = (label, *partition_image(label, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D))
-        if self.opt.architecture == 'SE' and self.opt.global_parts:
-            fake_parts_inter = (self.pred, *partition_image(self.pred, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D))
+        input_parts = (input, *partition_image(input, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D, self.opt.global_parts))
+        real_parts  = (label, *partition_image(label, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D, self.opt.global_parts))
+        if self.opt.global_parts:
+            fake_parts = (self.pred, *partition_image(self.pred, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D, self.opt.global_parts))
         else:
-            fake_parts_inter = (self.pred, *partition_image(self.pred_local, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D))
-        # fake_parts_final = (self.pred, *partition_image(self.pred, self.opt.h_ratio, self.opt.w_ratio))
+            fake_parts = (self.pred, *partition_image(self.pred_local, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D, self.opt.global_parts))
         
         loss_G_adv = 0.0
         loss_G_pxl = 0.0
         loss_G_per = 0.0
         for i in range(len(real_parts)):
             # fake_pair = torch.cat([input_parts[i], fake_parts_final[i]], dim=1)
-            fake_pair = torch.cat([input_parts[i], fake_parts_inter[i]], dim=1)
+            fake_pair = torch.cat([input_parts[i], fake_parts[i]], dim=1)
             fake_judge = self.D_list[i](fake_pair)
             loss_adv = self.opt.delta * self.criterion_adv(fake_judge, True)
-            loss_pxl = self.opt.lamda * self.criterion_pxl(fake_parts_inter[i], real_parts[i])
-            loss_per = self.opt.gamma * self.criterion_per(fake_parts_inter[i], real_parts[i])
+            loss_pxl = self.opt.lamda * self.criterion_pxl(fake_parts[i], real_parts[i])
+            loss_per = self.opt.gamma * self.criterion_per(fake_parts[i], real_parts[i])
             loss_G_adv += loss_adv
             loss_G_pxl += loss_pxl
             loss_G_per += loss_per
@@ -176,50 +174,87 @@ class MyGanModel():
         
         # Save G
         G_global_path   = os.path.join(folder, f'G_global.weight')
-        G_local_tl_path = os.path.join(folder, f'G_local_tl.weight')
-        G_local_tr_path = os.path.join(folder, f'G_local_tr.weight')
-        G_local_d_path  = os.path.join(folder, f'G_local_d.weight')
-        G_combiner_path = os.path.join(folder, f'G_combiner.weight')
         torch.save(self.G_global.state_dict(),   G_global_path)
-        torch.save(self.G_local_tl.state_dict(), G_local_tl_path)
-        torch.save(self.G_local_tr.state_dict(), G_local_tr_path)
-        torch.save(self.G_local_d.state_dict(),  G_local_d_path)
+        G_combiner_path = os.path.join(folder, f'G_combiner.weight')
         torch.save(self.G_combiner.state_dict(), G_combiner_path)
+        if self.opt.architecture == 'SE':
+            G_local_tl_path = os.path.join(folder, f'G_local_tl.weight')
+            G_local_tr_path = os.path.join(folder, f'G_local_tr.weight')
+            G_local_d_path  = os.path.join(folder, f'G_local_d.weight')
+            torch.save(self.G_local_tl.state_dict(), G_local_tl_path)
+            torch.save(self.G_local_tr.state_dict(), G_local_tr_path)
+            torch.save(self.G_local_d.state_dict(),  G_local_d_path)
+        elif self.opt.architecture == 'DE':
+            G_local_t_path = os.path.join(folder, f'G_local_t.weight')
+            G_local_d_path = os.path.join(folder, f'G_local_d.weight')
+            torch.save(self.G_local_t.state_dict(), G_local_t_path)
+            torch.save(self.G_local_d.state_dict(), G_local_d_path)
+        elif self.opt.architecture == 'TE':
+            G_local_path  = os.path.join(folder, f'G_local.weight')
+            torch.save(self.G_local.state_dict(),  G_local_path)
         
         # Save D
         D_global_path   = os.path.join(folder, f'D_global.weight')
-        D_local_tl_path = os.path.join(folder, f'D_local_tl.weight')
-        D_local_tr_path = os.path.join(folder, f'D_local_tr.weight')
-        D_local_d_path  = os.path.join(folder, f'D_local_d.weight')
         torch.save(self.D_global.state_dict(),   D_global_path)
-        torch.save(self.D_local_tl.state_dict(), D_local_tl_path)
-        torch.save(self.D_local_tr.state_dict(), D_local_tr_path)
-        torch.save(self.D_local_d.state_dict(),  D_local_d_path)
+        if self.opt.architecture == 'SE' or self.opt.all_D or self.opt.global_parts:
+            D_local_tl_path = os.path.join(folder, f'D_local_tl.weight')
+            D_local_tr_path = os.path.join(folder, f'D_local_tr.weight')
+            D_local_d_path  = os.path.join(folder, f'D_local_d.weight')
+            torch.save(self.D_local_tl.state_dict(), D_local_tl_path)
+            torch.save(self.D_local_tr.state_dict(), D_local_tr_path)
+            torch.save(self.D_local_d.state_dict(),  D_local_d_path)
+        elif self.opt.architecture == 'DE':
+            D_local_t_path = os.path.join(folder, f'D_local_t.weight')
+            D_local_d_path = os.path.join(folder, f'D_local_d.weight')
+            torch.save(self.D_local_t.state_dict(), D_local_t_path)
+            torch.save(self.D_local_d.state_dict(), D_local_d_path)
+        elif self.opt.architecture == 'TE':
+            D_local_path  = os.path.join(folder, f'D_local.weight')
+            torch.save(self.D_local.state_dict(), D_local_path)
     
     
     def load_models(self, folder:str) -> None:
         # Load G
         G_global_path   = os.path.join(folder, f'G_global.weight')
-        G_local_tl_path = os.path.join(folder, f'G_local_tl.weight')
-        G_local_tr_path = os.path.join(folder, f'G_local_tr.weight')
-        G_local_d_path  = os.path.join(folder, f'G_local_d.weight')
         G_combiner_path = os.path.join(folder, f'G_combiner.weight')
         self.G_global.load_state_dict(torch.load(G_global_path))
-        self.G_local_tl.load_state_dict(torch.load(G_local_tl_path))
-        self.G_local_tr.load_state_dict(torch.load(G_local_tr_path))
-        self.G_local_d.load_state_dict(torch.load(G_local_d_path))
         self.G_combiner.load_state_dict(torch.load(G_combiner_path))
+        if self.opt.architecture == 'SE':
+            G_local_tl_path = os.path.join(folder, f'G_local_tl.weight')
+            G_local_tr_path = os.path.join(folder, f'G_local_tr.weight')
+            G_local_d_path  = os.path.join(folder, f'G_local_d.weight')
+            self.G_local_tl.load_state_dict(torch.load(G_local_tl_path))
+            self.G_local_tr.load_state_dict(torch.load(G_local_tr_path))
+            self.G_local_d.load_state_dict( torch.load(G_local_d_path))
+        elif self.opt.architecture == 'DE':
+            G_local_t_path = os.path.join(folder, f'G_local_t.weight')
+            G_local_d_path = os.path.join(folder, f'G_local_d.weight')
+            self.G_local_t.load_state_dict(torch.load(G_local_t_path))
+            self.G_local_d.load_state_dict(torch.load(G_local_d_path))
+        elif self.opt.architecture == 'TE':
+            G_local_path = os.path.join(folder, f'G_local.weight')
+            self.G_local.load_state_dict(torch.load(G_local_path))
+            
         
         # Load D
         if self.isTrain:
             D_global_path   = os.path.join(folder, f'D_global.weight')
-            D_local_tl_path = os.path.join(folder, f'D_local_tl.weight')
-            D_local_tr_path = os.path.join(folder, f'D_local_tr.weight')
-            D_local_d_path  = os.path.join(folder, f'D_local_d.weight')
             self.D_global.load_state_dict(torch.load(D_global_path))
-            self.D_local_tl.load_state_dict(torch.load(D_local_tl_path))
-            self.D_local_tr.load_state_dict(torch.load(D_local_tr_path))
-            self.D_local_d.load_state_dict(torch.load(D_local_d_path))
+            if self.opt.architecture == 'SE' or self.opt.all_D or self.opt.global_parts:
+                D_local_tl_path = os.path.join(folder, f'D_local_tl.weight')
+                D_local_tr_path = os.path.join(folder, f'D_local_tr.weight')
+                D_local_d_path  = os.path.join(folder, f'D_local_d.weight')
+                self.D_local_tl.load_state_dict(torch.load(D_local_tl_path))
+                self.D_local_tr.load_state_dict(torch.load(D_local_tr_path))
+                self.D_local_d.load_state_dict(torch.load(D_local_d_path))
+            elif self.opt.architecture == 'DE':
+                D_local_t_path = os.path.join(folder, f'D_local_t.weight')
+                D_local_d_path = os.path.join(folder, f'D_local_d.weight')
+                self.D_local_t.load_state_dict(torch.load(D_local_t_path))
+                self.D_local_d.load_state_dict(torch.load(D_local_d_path))
+            elif self.opt.architecture == 'TE':
+                D_local_path = os.path.join(folder, f'D_local.weight')
+                self.D_local.load_state_dict(torch.load(D_local_path))
 
 
 class MyInferenceModel(nn.Module):
