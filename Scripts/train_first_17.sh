@@ -1,9 +1,9 @@
-# global final DE
+# final parts TE
 set -ex
-if [ -z "$1" ]; then name="train_first_16"; else name=$1; fi;
+if [ -z "$1" ]; then name="train_first_17"; else name=$1; fi;
 python /kaggle/input/my-net/MyNet/train.py                                          \
     --log_name ${name}                                                              \
-    --architecture DE                                                               \
+    --architecture TE                                                               \
     --delta 1 --lamda 10 --gamma 5                                                  \
     --epochs 400 --batch_size 12                                                    \
     --save --final_parts                                                           \

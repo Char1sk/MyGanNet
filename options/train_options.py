@@ -6,10 +6,12 @@ class TrainOptions(BaseOptions):
         ## Method HyperParams
         self.parser.add_argument('--h_ratio', type=float, default=0.55, help='the ratio of upper parts')
         self.parser.add_argument('--w_ratio', type=float, default=0.5, help='the ratio of left parts')
+        self.parser.add_argument('--no_global', action='store_true', help='no global G')
+        self.parser.add_argument('--no_local', action='store_true', help='no local Gs')
         self.parser.add_argument('--architecture', default='SE', help='SE|DE|TE for local generator')
         self.parser.add_argument('--all_D', action='store_true', help='using all 3 Discriminators in SE|DE|TE instead of 3|2|1')
-        self.parser.add_argument('--global_parts', action='store_true', help='using global parts for AdvLoss')
-        self.parser.add_argument('--ld_layer', type=int, default=4, help='num_layer for G local down')
+        self.parser.add_argument('--final_parts', action='store_true', help='using final parts for AdvLoss')
+        self.parser.add_argument('--ld_layer', type=int, default=4, help='num_layer for local G down')
         self.parser.add_argument('--cb_layer', type=int, default=2, help='num_layer for G combiner')
         
         ## Dataset Path

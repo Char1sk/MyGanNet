@@ -1,12 +1,12 @@
-# global final DE
+# Pix2Pix (only global, no local)
 set -ex
-if [ -z "$1" ]; then name="train_first_16"; else name=$1; fi;
+if [ -z "$1" ]; then name="train_first_18"; else name=$1; fi;
 python /kaggle/input/my-net/MyNet/train.py                                          \
     --log_name ${name}                                                              \
-    --architecture DE                                                               \
+    --no_local                                                                      \
     --delta 1 --lamda 10 --gamma 5                                                  \
     --epochs 400 --batch_size 12                                                    \
-    --save --final_parts                                                           \
+    --save                                                                          \
     --test_start 50 --test_period 50                                                \
     --vgg_model /kaggle/input/modelscagan/vgg.model                                 \
     --inception_model /kaggle/input/modelscagan/pt_inception.pth                    \

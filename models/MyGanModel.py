@@ -24,35 +24,46 @@ class MyGanModel():
         self.opt = opt
         self.isTrain = isTrain
         
-        self.G_global   = MyGenerator(opt.input_nc, opt.output_nc, num_downs=7).to(device).apply(weights_init)
-        self.G_combiner = MyCombiner(2*opt.output_nc, opt.output_nc, num_res=self.opt.cb_layer).to(device).apply(weights_init)
-        if self.opt.architecture == 'SE':
-            self.G_local_tl = MyGenerator(opt.input_nc, opt.output_nc, num_downs=4).to(device).apply(weights_init)
-            self.G_local_tr = MyGenerator(opt.input_nc, opt.output_nc, num_downs=4).to(device).apply(weights_init)
-            self.G_local_d  = MyGenerator(opt.input_nc, opt.output_nc, num_downs=self.opt.ld_layer).to(device).apply(weights_init)
-            self.G_list = [self.G_global, self.G_local_tl, self.G_local_tr, self.G_local_d, self.G_combiner]
-        elif self.opt.architecture == 'DE':
-            self.G_local_t = MyGenerator(opt.input_nc, opt.output_nc, num_downs=4, architecture='DE').to(device).apply(weights_init)
-            self.G_local_d = MyGenerator(opt.input_nc, opt.output_nc, num_downs=self.opt.ld_layer).to(device).apply(weights_init)
-            self.G_list = [self.G_global, self.G_local_t, self.G_local_d, self.G_combiner]
-        elif self.opt.architecture == 'TE':
-            self.G_local = MyGenerator(opt.input_nc, opt.output_nc, num_downs=4, architecture='TE').to(device).apply(weights_init)
-            self.G_list = [self.G_global, self.G_local, self.G_combiner]
+        self.G_list = []
+        if not self.opt.no_global:
+            self.G_global = MyGenerator(opt.input_nc, opt.output_nc, num_downs=7).to(device).apply(weights_init)
+            self.G_list += [self.G_global]
+        if not self.opt.no_local:
+            if self.opt.architecture == 'SE':
+                self.G_local_tl = MyGenerator(opt.input_nc, opt.output_nc, num_downs=4).to(device).apply(weights_init)
+                self.G_local_tr = MyGenerator(opt.input_nc, opt.output_nc, num_downs=4).to(device).apply(weights_init)
+                self.G_local_d  = MyGenerator(opt.input_nc, opt.output_nc, num_downs=self.opt.ld_layer).to(device).apply(weights_init)
+                self.G_list += [self.G_local_tl, self.G_local_tr, self.G_local_d]
+            elif self.opt.architecture == 'DE':
+                self.G_local_t = MyGenerator(opt.input_nc, opt.output_nc, num_downs=4, architecture='DE').to(device).apply(weights_init)
+                self.G_local_d = MyGenerator(opt.input_nc, opt.output_nc, num_downs=self.opt.ld_layer).to(device).apply(weights_init)
+                self.G_list += [self.G_local_t, self.G_local_d]
+            elif self.opt.architecture == 'TE':
+                self.G_local = MyGenerator(opt.input_nc, opt.output_nc, num_downs=4, architecture='TE').to(device).apply(weights_init)
+                self.G_list += [self.G_local]
+        if not self.opt.no_global and not self.opt.no_local:
+            self.G_combiner = MyCombiner(2*opt.output_nc, opt.output_nc, num_res=self.opt.cb_layer).to(device).apply(weights_init)
+            self.G_list += [self.G_combiner]
+            
         
         if self.isTrain:
-            self.D_global   = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
-            if self.opt.architecture == 'SE' or self.opt.all_D or self.opt.global_parts:
-                self.D_local_tl = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
-                self.D_local_tr = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
-                self.D_local_d  = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
-                self.D_list = [self.D_global, self.D_local_tl, self.D_local_tr, self.D_local_d]
-            elif self.opt.architecture == 'DE':
-                self.D_local_t = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
-                self.D_local_d = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
-                self.D_list = [self.D_global, self.D_local_t, self.D_local_d]
-            elif self.opt.architecture == 'TE':
-                self.D_local = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
-                self.D_list = [self.D_global, self.D_local]
+            self.D_list = []
+            if not self.opt.no_global:
+                self.D_global = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
+                self.D_list += [self.D_global]
+            if not self.opt.no_local:
+                if self.opt.architecture == 'SE' or self.opt.all_D or self.opt.final_parts:
+                    self.D_local_tl = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
+                    self.D_local_tr = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
+                    self.D_local_d  = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
+                    self.D_list += [self.D_local_tl, self.D_local_tr, self.D_local_d]
+                elif self.opt.architecture == 'DE':
+                    self.D_local_t = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
+                    self.D_local_d = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
+                    self.D_list += [self.D_local_t, self.D_local_d]
+                elif self.opt.architecture == 'TE':
+                    self.D_local = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
+                    self.D_list += [self.D_local]
             
             VGG = MyVggEncoder(opt.vgg_model).to(device)
             self.criterion_adv = AdversarialLoss(device, opt.BCE)
@@ -74,33 +85,43 @@ class MyGanModel():
         
         x_tl, x_tr, x_d = partition_image(x, self.opt.h_ratio, self.opt.w_ratio)
         
-        self.pred_global = self.G_global(x)
-        if self.opt.architecture == 'SE':
-            pred_local_tl = self.G_local_tl(x_tl)
-            pred_local_tr = self.G_local_tr(x_tr)
-            pred_local_d  = self.G_local_d(x_d)
-            self.pred_local = concat_image(pred_local_tl, pred_local_tr, pred_local_d)
-        elif self.opt.architecture == 'DE':
-            pred_local_t  = self.G_local_t(x_tl, x_tr)
-            pred_local_d  = self.G_local_d(x_d)
-            self.pred_local = torch.cat([pred_local_t, pred_local_d], dim=2)
-        elif self.opt.architecture == 'TE':
-            self.pred_local = self.G_local(x_tl, x_tr, x_d)
-        self.pred = self.G_combiner(torch.cat([self.pred_global, self.pred_local], dim=1))
+        if not self.opt.no_global:
+            self.pred_global = self.G_global(x)
+            self.pred = self.pred_global
+        if not self.opt.no_local:
+            if self.opt.architecture == 'SE':
+                pred_local_tl = self.G_local_tl(x_tl)
+                pred_local_tr = self.G_local_tr(x_tr)
+                pred_local_d  = self.G_local_d(x_d)
+                self.pred_local = concat_image(pred_local_tl, pred_local_tr, pred_local_d)
+            elif self.opt.architecture == 'DE':
+                pred_local_t  = self.G_local_t(x_tl, x_tr)
+                pred_local_d  = self.G_local_d(x_d)
+                self.pred_local = torch.cat([pred_local_t, pred_local_d], dim=2)
+            elif self.opt.architecture == 'TE':
+                self.pred_local = self.G_local(x_tl, x_tr, x_d)
+            self.pred = self.pred_local
+        if not self.opt.no_global and not self.opt.no_local:
+            self.pred = self.G_combiner(torch.cat([self.pred_global, self.pred_local], dim=1))
         
         return self.pred
     
     
     def backward_D(self, input:Tensor, label:Tensor, record:LossRecord) -> None:
         '''Use results of do_forward to calculate loss & gradient of D'''
+        input_parts, real_parts, fake_parts = [], [], []
         
-        # NOTE adv_loss calculates final image and its parts
-        input_parts = (input, *partition_image(input, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D, self.opt.global_parts))
-        real_parts  = (label, *partition_image(label, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D, self.opt.global_parts))
-        if self.opt.global_parts:
-            fake_parts = (self.pred, *partition_image(self.pred, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D, self.opt.global_parts))
-        else:
-            fake_parts = (self.pred, *partition_image(self.pred_local, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D, self.opt.global_parts))
+        if not self.opt.no_global:
+            input_parts += [input]
+            real_parts  += [label]
+            fake_parts  += [self.pred]
+        if not self.opt.no_local:
+            input_parts += partition_image(input, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D, self.opt.final_parts)
+            real_parts  += partition_image(label, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D, self.opt.final_parts)
+            if self.opt.final_parts:
+                fake_parts += partition_image(self.pred, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D, self.opt.final_parts)
+            else:
+                fake_parts += partition_image(self.pred_local, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D, self.opt.final_parts)
         
         loss_D_fake = 0.0
         loss_D_real = 0.0
@@ -119,12 +140,19 @@ class MyGanModel():
     
     def backward_G(self, input:Tensor, label:Tensor, record:LossRecord, do_back:bool=True) -> None:
         '''Use results of do_forward to calculate loss & gradient of G'''
-        input_parts = (input, *partition_image(input, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D, self.opt.global_parts))
-        real_parts  = (label, *partition_image(label, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D, self.opt.global_parts))
-        if self.opt.global_parts:
-            fake_parts = (self.pred, *partition_image(self.pred, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D, self.opt.global_parts))
-        else:
-            fake_parts = (self.pred, *partition_image(self.pred_local, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D, self.opt.global_parts))
+        input_parts, real_parts, fake_parts = [], [], []
+        
+        if not self.opt.no_global:
+            input_parts += [input]
+            real_parts  += [label]
+            fake_parts  += [self.pred]
+        if not self.opt.no_local:
+            input_parts += partition_image(input, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D, self.opt.final_parts)
+            real_parts  += partition_image(label, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D, self.opt.final_parts)
+            if self.opt.final_parts:
+                fake_parts += partition_image(self.pred, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D, self.opt.final_parts)
+            else:
+                fake_parts += partition_image(self.pred_local, self.opt.h_ratio, self.opt.w_ratio, self.opt.architecture, self.opt.all_D, self.opt.final_parts)
         
         loss_G_adv = 0.0
         loss_G_pxl = 0.0
@@ -173,88 +201,98 @@ class MyGanModel():
             os.makedirs(folder)
         
         # Save G
-        G_global_path   = os.path.join(folder, f'G_global.weight')
-        torch.save(self.G_global.state_dict(),   G_global_path)
-        G_combiner_path = os.path.join(folder, f'G_combiner.weight')
-        torch.save(self.G_combiner.state_dict(), G_combiner_path)
-        if self.opt.architecture == 'SE':
-            G_local_tl_path = os.path.join(folder, f'G_local_tl.weight')
-            G_local_tr_path = os.path.join(folder, f'G_local_tr.weight')
-            G_local_d_path  = os.path.join(folder, f'G_local_d.weight')
-            torch.save(self.G_local_tl.state_dict(), G_local_tl_path)
-            torch.save(self.G_local_tr.state_dict(), G_local_tr_path)
-            torch.save(self.G_local_d.state_dict(),  G_local_d_path)
-        elif self.opt.architecture == 'DE':
-            G_local_t_path = os.path.join(folder, f'G_local_t.weight')
-            G_local_d_path = os.path.join(folder, f'G_local_d.weight')
-            torch.save(self.G_local_t.state_dict(), G_local_t_path)
-            torch.save(self.G_local_d.state_dict(), G_local_d_path)
-        elif self.opt.architecture == 'TE':
-            G_local_path  = os.path.join(folder, f'G_local.weight')
-            torch.save(self.G_local.state_dict(),  G_local_path)
+        if not self.opt.no_global:
+            G_global_path = os.path.join(folder, f'G_global.weight')
+            torch.save(self.G_global.state_dict(),   G_global_path)
+        if not self.opt.no_local:
+            if self.opt.architecture == 'SE':
+                G_local_tl_path = os.path.join(folder, f'G_local_tl.weight')
+                G_local_tr_path = os.path.join(folder, f'G_local_tr.weight')
+                G_local_d_path  = os.path.join(folder, f'G_local_d.weight')
+                torch.save(self.G_local_tl.state_dict(), G_local_tl_path)
+                torch.save(self.G_local_tr.state_dict(), G_local_tr_path)
+                torch.save(self.G_local_d.state_dict(),  G_local_d_path)
+            elif self.opt.architecture == 'DE':
+                G_local_t_path = os.path.join(folder, f'G_local_t.weight')
+                G_local_d_path = os.path.join(folder, f'G_local_d.weight')
+                torch.save(self.G_local_t.state_dict(), G_local_t_path)
+                torch.save(self.G_local_d.state_dict(), G_local_d_path)
+            elif self.opt.architecture == 'TE':
+                G_local_path  = os.path.join(folder, f'G_local.weight')
+                torch.save(self.G_local.state_dict(),  G_local_path)
+        if not self.opt.no_global and not self.opt.no_local:
+            G_combiner_path = os.path.join(folder, f'G_combiner.weight')
+            torch.save(self.G_combiner.state_dict(), G_combiner_path)
         
         # Save D
-        D_global_path   = os.path.join(folder, f'D_global.weight')
-        torch.save(self.D_global.state_dict(),   D_global_path)
-        if self.opt.architecture == 'SE' or self.opt.all_D or self.opt.global_parts:
-            D_local_tl_path = os.path.join(folder, f'D_local_tl.weight')
-            D_local_tr_path = os.path.join(folder, f'D_local_tr.weight')
-            D_local_d_path  = os.path.join(folder, f'D_local_d.weight')
-            torch.save(self.D_local_tl.state_dict(), D_local_tl_path)
-            torch.save(self.D_local_tr.state_dict(), D_local_tr_path)
-            torch.save(self.D_local_d.state_dict(),  D_local_d_path)
-        elif self.opt.architecture == 'DE':
-            D_local_t_path = os.path.join(folder, f'D_local_t.weight')
-            D_local_d_path = os.path.join(folder, f'D_local_d.weight')
-            torch.save(self.D_local_t.state_dict(), D_local_t_path)
-            torch.save(self.D_local_d.state_dict(), D_local_d_path)
-        elif self.opt.architecture == 'TE':
-            D_local_path  = os.path.join(folder, f'D_local.weight')
-            torch.save(self.D_local.state_dict(), D_local_path)
+        if not self.opt.no_global:
+            D_global_path = os.path.join(folder, f'D_global.weight')
+            torch.save(self.D_global.state_dict(),   D_global_path)
+        if not self.opt.no_local:
+            if self.opt.architecture == 'SE' or self.opt.all_D or self.opt.final_parts:
+                D_local_tl_path = os.path.join(folder, f'D_local_tl.weight')
+                D_local_tr_path = os.path.join(folder, f'D_local_tr.weight')
+                D_local_d_path  = os.path.join(folder, f'D_local_d.weight')
+                torch.save(self.D_local_tl.state_dict(), D_local_tl_path)
+                torch.save(self.D_local_tr.state_dict(), D_local_tr_path)
+                torch.save(self.D_local_d.state_dict(),  D_local_d_path)
+            elif self.opt.architecture == 'DE':
+                D_local_t_path = os.path.join(folder, f'D_local_t.weight')
+                D_local_d_path = os.path.join(folder, f'D_local_d.weight')
+                torch.save(self.D_local_t.state_dict(), D_local_t_path)
+                torch.save(self.D_local_d.state_dict(), D_local_d_path)
+            elif self.opt.architecture == 'TE':
+                D_local_path  = os.path.join(folder, f'D_local.weight')
+                torch.save(self.D_local.state_dict(), D_local_path)
     
     
     def load_models(self, folder:str) -> None:
         # Load G
-        G_global_path   = os.path.join(folder, f'G_global.weight')
-        G_combiner_path = os.path.join(folder, f'G_combiner.weight')
-        self.G_global.load_state_dict(torch.load(G_global_path))
-        self.G_combiner.load_state_dict(torch.load(G_combiner_path))
-        if self.opt.architecture == 'SE':
-            G_local_tl_path = os.path.join(folder, f'G_local_tl.weight')
-            G_local_tr_path = os.path.join(folder, f'G_local_tr.weight')
-            G_local_d_path  = os.path.join(folder, f'G_local_d.weight')
-            self.G_local_tl.load_state_dict(torch.load(G_local_tl_path))
-            self.G_local_tr.load_state_dict(torch.load(G_local_tr_path))
-            self.G_local_d.load_state_dict( torch.load(G_local_d_path))
-        elif self.opt.architecture == 'DE':
-            G_local_t_path = os.path.join(folder, f'G_local_t.weight')
-            G_local_d_path = os.path.join(folder, f'G_local_d.weight')
-            self.G_local_t.load_state_dict(torch.load(G_local_t_path))
-            self.G_local_d.load_state_dict(torch.load(G_local_d_path))
-        elif self.opt.architecture == 'TE':
-            G_local_path = os.path.join(folder, f'G_local.weight')
-            self.G_local.load_state_dict(torch.load(G_local_path))
+        if not self.opt.no_global:
+            G_global_path = os.path.join(folder, f'G_global.weight')
+            self.G_global.load_state_dict(torch.load(G_global_path))
+        if not self.opt.no_local:
+            if self.opt.architecture == 'SE':
+                G_local_tl_path = os.path.join(folder, f'G_local_tl.weight')
+                G_local_tr_path = os.path.join(folder, f'G_local_tr.weight')
+                G_local_d_path  = os.path.join(folder, f'G_local_d.weight')
+                self.G_local_tl.load_state_dict(torch.load(G_local_tl_path))
+                self.G_local_tr.load_state_dict(torch.load(G_local_tr_path))
+                self.G_local_d.load_state_dict( torch.load(G_local_d_path))
+            elif self.opt.architecture == 'DE':
+                G_local_t_path = os.path.join(folder, f'G_local_t.weight')
+                G_local_d_path = os.path.join(folder, f'G_local_d.weight')
+                self.G_local_t.load_state_dict(torch.load(G_local_t_path))
+                self.G_local_d.load_state_dict(torch.load(G_local_d_path))
+            elif self.opt.architecture == 'TE':
+                G_local_path = os.path.join(folder, f'G_local.weight')
+                self.G_local.load_state_dict(torch.load(G_local_path))
+        if not self.opt.no_global and not self.opt.no_local:
+            G_combiner_path = os.path.join(folder, f'G_combiner.weight')
+            self.G_combiner.load_state_dict(torch.load(G_combiner_path))
             
         
         # Load D
         if self.isTrain:
-            D_global_path   = os.path.join(folder, f'D_global.weight')
-            self.D_global.load_state_dict(torch.load(D_global_path))
-            if self.opt.architecture == 'SE' or self.opt.all_D or self.opt.global_parts:
-                D_local_tl_path = os.path.join(folder, f'D_local_tl.weight')
-                D_local_tr_path = os.path.join(folder, f'D_local_tr.weight')
-                D_local_d_path  = os.path.join(folder, f'D_local_d.weight')
-                self.D_local_tl.load_state_dict(torch.load(D_local_tl_path))
-                self.D_local_tr.load_state_dict(torch.load(D_local_tr_path))
-                self.D_local_d.load_state_dict(torch.load(D_local_d_path))
-            elif self.opt.architecture == 'DE':
-                D_local_t_path = os.path.join(folder, f'D_local_t.weight')
-                D_local_d_path = os.path.join(folder, f'D_local_d.weight')
-                self.D_local_t.load_state_dict(torch.load(D_local_t_path))
-                self.D_local_d.load_state_dict(torch.load(D_local_d_path))
-            elif self.opt.architecture == 'TE':
-                D_local_path = os.path.join(folder, f'D_local.weight')
-                self.D_local.load_state_dict(torch.load(D_local_path))
+            if not self.opt.no_global:
+                D_global_path   = os.path.join(folder, f'D_global.weight')
+                self.D_global.load_state_dict(torch.load(D_global_path))
+            if not self.opt.no_local:
+                if self.opt.architecture == 'SE' or self.opt.all_D or self.opt.final_parts:
+                    D_local_tl_path = os.path.join(folder, f'D_local_tl.weight')
+                    D_local_tr_path = os.path.join(folder, f'D_local_tr.weight')
+                    D_local_d_path  = os.path.join(folder, f'D_local_d.weight')
+                    self.D_local_tl.load_state_dict(torch.load(D_local_tl_path))
+                    self.D_local_tr.load_state_dict(torch.load(D_local_tr_path))
+                    self.D_local_d.load_state_dict(torch.load(D_local_d_path))
+                elif self.opt.architecture == 'DE':
+                    D_local_t_path = os.path.join(folder, f'D_local_t.weight')
+                    D_local_d_path = os.path.join(folder, f'D_local_d.weight')
+                    self.D_local_t.load_state_dict(torch.load(D_local_t_path))
+                    self.D_local_d.load_state_dict(torch.load(D_local_d_path))
+                elif self.opt.architecture == 'TE':
+                    D_local_path = os.path.join(folder, f'D_local.weight')
+                    self.D_local.load_state_dict(torch.load(D_local_path))
 
 
 class MyInferenceModel(nn.Module):
