@@ -3,12 +3,15 @@ import torch.nn as nn
 
 
 class PixelMatchLoss(nn.Module):
-    def __init__(self, device) -> None:
+    def __init__(self, device, cri) -> None:
         super(PixelMatchLoss, self).__init__()
-        self.criterionL1 = nn.L1Loss()
+        if cri == 'L1':
+            self.criterion = nn.L1Loss()
+        elif cri == 'L2':
+            self.criterion = nn.MSELoss()
     
     def forward(self, pred, label):
-        lossGlobal = self.criterionL1(pred, label)
+        lossGlobal = self.criterion(pred, label)
         return lossGlobal
 
 

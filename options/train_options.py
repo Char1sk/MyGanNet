@@ -33,10 +33,12 @@ class TrainOptions(BaseOptions):
         self.parser.add_argument('--inception_model', default='../Models/pt_inception.pth', help='path of Inception model for FID')
         
         ## Loss Params
-        self.parser.add_argument('--BCE', action='store_true', help='use BCELoss for Adversarial Loss, and Sigmoid for D')
+        self.parser.add_argument('--use_BCE', action='store_true', help='use BCELoss for Adversarial Loss, and Sigmoid for D')
+        self.parser.add_argument('--pxl_loss', default='L1', help='L1|L2 for pixel matching loss')
+        self.parser.add_argument('--no_perceptual', action='store_true', help='not using Perceptual Loss')
         self.parser.add_argument('--alpha', type=float, default=0.7, help='weight of Global L1 Loss in Compositional Loss')
         self.parser.add_argument('--vgg_layers', type=int, default=3, help='layers of VGG to use for Perceptual Loss')
-
+        
         ## Optim Params
         self.parser.add_argument('--lr', type=float, default=0.0002, help='learning rate of all optimizers')
         self.parser.add_argument('--beta1', type=float, default=0.5, help='beta1 of all Adam optimizers')

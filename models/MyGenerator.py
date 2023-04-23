@@ -338,6 +338,7 @@ class MyCombiner(nn.Module):
         self.model = nn.Sequential(first, mid, last)
     
     def forward(self, x:Tensor) -> Tensor:
+        # return (self.model(x)+1)/2
         return self.model(x)
 
 

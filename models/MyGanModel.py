@@ -44,31 +44,32 @@ class MyGanModel():
         if not self.opt.no_global and not self.opt.no_local:
             self.G_combiner = MyCombiner(2*opt.output_nc, opt.output_nc, num_res=self.opt.cb_layer).to(device).apply(weights_init)
             self.G_list += [self.G_combiner]
-            
+        
         
         if self.isTrain:
             self.D_list = []
             if not self.opt.no_global:
-                self.D_global = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
+                self.D_global = MyPatchDiscriminator(opt.input_nc+opt.output_nc, use_sigmoid=opt.use_BCE).to(device).apply(weights_init)
                 self.D_list += [self.D_global]
             if not self.opt.no_local:
                 if self.opt.architecture == 'SE' or self.opt.all_D or self.opt.final_parts:
-                    self.D_local_tl = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
-                    self.D_local_tr = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
-                    self.D_local_d  = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
+                    self.D_local_tl = MyPatchDiscriminator(opt.input_nc+opt.output_nc, use_sigmoid=opt.use_BCE).to(device).apply(weights_init)
+                    self.D_local_tr = MyPatchDiscriminator(opt.input_nc+opt.output_nc, use_sigmoid=opt.use_BCE).to(device).apply(weights_init)
+                    self.D_local_d  = MyPatchDiscriminator(opt.input_nc+opt.output_nc, use_sigmoid=opt.use_BCE).to(device).apply(weights_init)
                     self.D_list += [self.D_local_tl, self.D_local_tr, self.D_local_d]
                 elif self.opt.architecture == 'DE':
-                    self.D_local_t = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
-                    self.D_local_d = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
+                    self.D_local_t = MyPatchDiscriminator(opt.input_nc+opt.output_nc, use_sigmoid=opt.use_BCE).to(device).apply(weights_init)
+                    self.D_local_d = MyPatchDiscriminator(opt.input_nc+opt.output_nc, use_sigmoid=opt.use_BCE).to(device).apply(weights_init)
                     self.D_list += [self.D_local_t, self.D_local_d]
                 elif self.opt.architecture == 'TE':
-                    self.D_local = MyPatchDiscriminator(opt.input_nc+opt.output_nc).to(device).apply(weights_init)
+                    self.D_local = MyPatchDiscriminator(opt.input_nc+opt.output_nc, use_sigmoid=opt.use_BCE).to(device).apply(weights_init)
                     self.D_list += [self.D_local]
             
             VGG = MyVggEncoder(opt.vgg_model).to(device)
-            self.criterion_adv = AdversarialLoss(device, opt.BCE)
-            self.criterion_pxl = PixelMatchLoss(device)
-            self.criterion_per = PerceptualLoss(VGG, opt.vgg_layers)
+            self.criterion_adv = AdversarialLoss(device, opt.use_BCE)
+            self.criterion_pxl = PixelMatchLoss(device, opt.pxl_loss)
+            if not self.opt.no_perceptual:
+                self.criterion_per = PerceptualLoss(VGG, opt.vgg_layers)
             
             G_param_list = []
             for g in self.G_list:
@@ -163,7 +164,7 @@ class MyGanModel():
             fake_judge = self.D_list[i](fake_pair)
             loss_adv = self.opt.delta * self.criterion_adv(fake_judge, True)
             loss_pxl = self.opt.lamda * self.criterion_pxl(fake_parts[i], real_parts[i])
-            loss_per = self.opt.gamma * self.criterion_per(fake_parts[i], real_parts[i])
+            loss_per = self.opt.gamma * self.criterion_per(fake_parts[i], real_parts[i]) if not self.opt.no_perceptual else torch.tensor(0.0)
             loss_G_adv += loss_adv
             loss_G_pxl += loss_pxl
             loss_G_per += loss_per
