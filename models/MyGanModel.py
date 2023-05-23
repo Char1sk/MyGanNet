@@ -303,36 +303,47 @@ class MyInferenceModel(nn.Module):
         
         self.opt = opt
         
-        self.G_global   = MyGenerator(opt.input_nc, opt.output_nc, num_downs=7).to(device).apply(weights_init)
-        self.G_combiner = MyCombiner(2*opt.output_nc, opt.output_nc).to(device).apply(weights_init)
-        if self.opt.architecture == 'SE':
-            self.G_local_tl = MyGenerator(opt.input_nc, opt.output_nc, num_downs=4).to(device).apply(weights_init)
-            self.G_local_tr = MyGenerator(opt.input_nc, opt.output_nc, num_downs=4).to(device).apply(weights_init)
-            self.G_local_d  = MyGenerator(opt.input_nc, opt.output_nc, num_downs=4).to(device).apply(weights_init)
-            self.G_list = [self.G_global, self.G_local_tl, self.G_local_tr, self.G_local_d, self.G_combiner]
-        elif self.opt.architecture == 'DE':
-            self.G_local_t = MyGenerator(opt.input_nc, opt.output_nc, num_downs=4, architecture='DE').to(device).apply(weights_init)
-            self.G_local_d = MyGenerator(opt.input_nc, opt.output_nc, num_downs=4).to(device).apply(weights_init)
-            self.G_list = [self.G_global, self.G_local_t, self.G_local_d, self.G_combiner]
-        elif self.opt.architecture == 'TE':
-            self.G_local = MyGenerator(opt.input_nc, opt.output_nc, num_downs=4, architecture='TE').to(device).apply(weights_init)
-            self.G_list = [self.G_global, self.G_local, self.G_combiner]
+        self.G_list = []
+        if not self.opt.no_global:
+            self.G_global = MyGenerator(opt.input_nc, opt.output_nc, num_downs=7).to(device).apply(weights_init)
+            self.G_list += [self.G_global]
+        if not self.opt.no_local:
+            if self.opt.architecture == 'SE':
+                self.G_local_tl = MyGenerator(opt.input_nc, opt.output_nc, num_downs=4).to(device).apply(weights_init)
+                self.G_local_tr = MyGenerator(opt.input_nc, opt.output_nc, num_downs=4).to(device).apply(weights_init)
+                self.G_local_d  = MyGenerator(opt.input_nc, opt.output_nc, num_downs=self.opt.ld_layer).to(device).apply(weights_init)
+                self.G_list += [self.G_local_tl, self.G_local_tr, self.G_local_d]
+            elif self.opt.architecture == 'DE':
+                self.G_local_t = MyGenerator(opt.input_nc, opt.output_nc, num_downs=4, architecture='DE').to(device).apply(weights_init)
+                self.G_local_d = MyGenerator(opt.input_nc, opt.output_nc, num_downs=self.opt.ld_layer).to(device).apply(weights_init)
+                self.G_list += [self.G_local_t, self.G_local_d]
+            elif self.opt.architecture == 'TE':
+                self.G_local = MyGenerator(opt.input_nc, opt.output_nc, num_downs=4, architecture='TE').to(device).apply(weights_init)
+                self.G_list += [self.G_local]
+        if not self.opt.no_global and not self.opt.no_local:
+            self.G_combiner = MyCombiner(2*opt.output_nc, opt.output_nc, num_res=self.opt.cb_layer).to(device).apply(weights_init)
+            self.G_list += [self.G_combiner]
     
     def forward(self, x:Tensor) -> Tensor:
         x_tl, x_tr, x_d = partition_image(x, self.opt.h_ratio, self.opt.w_ratio)
         
-        pred_global = self.G_global(x)
-        if self.opt.architecture == 'SE':
-            pred_local_tl = self.G_local_tl(x_tl)
-            pred_local_tr = self.G_local_tr(x_tr)
-            pred_local_d  = self.G_local_d(x_d)
-            pred_local = concat_image(pred_local_tl, pred_local_tr, pred_local_d)
-        elif self.opt.architecture == 'DE':
-            pred_local_t  = self.G_local_t(x_tl, x_tr)
-            pred_local_d  = self.G_local_d(x_d)
-            pred_local = torch.cat([pred_local_t, pred_local_d], dim=2)
-        elif self.opt.architecture == 'TE':
-            pred_local = self.G_local(x_tl, x_tr, x_d)
-        pred = self.G_combiner(torch.cat([pred_global, pred_local], dim=1))
+        if not self.opt.no_global:
+            pred_global = self.G_global(x)
+            pred = pred_global
+        if not self.opt.no_local:
+            if self.opt.architecture == 'SE':
+                pred_local_tl = self.G_local_tl(x_tl)
+                pred_local_tr = self.G_local_tr(x_tr)
+                pred_local_d  = self.G_local_d(x_d)
+                pred_local = concat_image(pred_local_tl, pred_local_tr, pred_local_d)
+            elif self.opt.architecture == 'DE':
+                pred_local_t  = self.G_local_t(x_tl, x_tr)
+                pred_local_d  = self.G_local_d(x_d)
+                pred_local = torch.cat([pred_local_t, pred_local_d], dim=2)
+            elif self.opt.architecture == 'TE':
+                pred_local = self.G_local(x_tl, x_tr, x_d)
+            pred = pred_local
+        if not self.opt.no_global and not self.opt.no_local:
+            pred = self.G_combiner(torch.cat([pred_global, pred_local], dim=1))
         
         return pred

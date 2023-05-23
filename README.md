@@ -1,115 +1,13 @@
-<!-- 特征融合D？
+# Model for Face Sketch-Photo Generation
 
-D, D1, D2, D3
-adv_all, adv_parts -->
-# 中期
+## Structure
 
-## 复现和改进
+- train.py, eval.py, time_test.py: python scripts
+- data, loss, models, options, utils: codes
+- Assets, Saves, Scripts: static files
 
-- 效果将就，指标比不上
-- 做了一些小调整的实验(数据处理/权重/激活)，没有明显变化
-- FID: 86.56/95.91 + 41.3 （FID有点不够准
-- 309 MB + 10 MB + 2.6184s
+## Usage
 
-## 模型尝试
-
-- train还行，test有点拉，指标差了点（但是练得短）
-- 做了基本的训练，还没调参数和结构等
-- FID: 41.63/112.69
-- 231 MB + 42 MB + 1.0617s (其他的还没比)
-
-## 一些结论
-
-- 总体上观感可，但对背景、头发、脖子拟合不行，但符合场景需求
-- MSE比BCE好
-- random-size能排除padding，指标更高
-- inter比final对Adv好
-  - 图像质量更好，割裂感弱
-  - 指标没有明显变化(可能是save)
-- 对train拟合得更好，部分test-sample依然很差
-- ld+下半似乎效果好点，但tb貌似有彩色噪点？
-- gc+似乎没有明显优势，可能会过拟合
-- DE指标稍稍下降，左右色深一致
-- TE指标更下降，全局更接近，更不稳定，体感貌似可
-  - all_D并不见得更好，指标还更低，猜想是优化方向混合了
-
-## 下步工作
-
-- 提升模型效果
-  - 损失函数(材质/线条/权重等)
-  - 网络结构调整(层数/特征融合方式/LLL)
-  - 调参）
-- 评价和比较模型
-  - 效果指标(FID FSIM SSIM NLDA 人工二选一)
-  - 效率指标(参数量 计算量 访存量 内存占用 推理时间)
-  - 其他模型
-
-## 实验结果
-
-- 工作量问题
-- 模型比较
-- 不稳定、指标不准
-
-### 1. 对比实验：Base SE DE TE
-
-- 处理背景、随机大小；部分D、inter；L1、MSE、Per
-
-|    Model    | FID$\darr$ | FSIM$\uarr$ | Params  |   FLOPs   |       Time        |
-| :---------: | :--------: | :---------: | :-----: | :-------: | :---------------: |
-| Baseline 04 |   100.4    |      -      | 83.69 M | 2*20.29 G | 2.90 s / 0.0449 s |
-|    SE 05    |   101.9    |   0.7771    | 60.52 M | 2*31.28 G | 1.19 s / 0.0456 s |
-|    DE 08    |   97.52    |   0.7876    | 57.10 M | 2*31.28 G | 1.27 s / 0.0448 s |
-|    TE 09    |   95.97    |   0.7850    | 53.69 M | 2*31.35 G | 1.16 s / 0.0443 s |
-
-- D算不算Params/FLOPs？Time多次/少次？
-- 不太有优势，不太稳
-
-### 2. 消融实验：data, archi, loss
-
-#### 2.1 数据预处理
-
-- Background
-- Shape
-
-|         | Background | Shape | FID$\darr$ |
-| :-----: | :--------: | :---: | :--------: |
-| Base 01 |     X      |   X   |   297.7    |
-| Base 02 |     X      |   O   |   197.4    |
-| Base 03 |     O      |   X   |   158.0    |
-| Base 05 |     O      |   O   |   106.9    |
-|  SE 13  |     X      |   X   |   346.4    |
-|  SE 12  |     X      |   O   |   147.7    |
-|  SE 14  |     O      |   X   |   166.1    |
-|  SE 05  |     O      |   O   |   101.9    |
-
-#### 2.2 损失函数
-
-- L1/L2
-- Perceptual
-- MSE/BCE
-
-|      | Adv  | Pxl  | Per  | FID$\darr$ |  FSIM  |
-| :--: | :--: | :--: | :--: | :--------: | :----: |
-|      | BCE  |  L1  |  O   |     -      |   -    |
-|  20  | MSE  |  L2  |  O   |     -      |   -    |
-|  21  | MSE  |  L1  |  X   |     -      |   -    |
-|  15  | MSE  |  L1  |  O   |   91.80    | 0.7909 |
-
-#### 2.3 模型架构
-
-- SE DE TE
-- all_D/inter
-
-|   Model   | Dtype | FID$\darr$ | FSIM$\uarr$ | Params  |   FLOPs   |       Time        |
-| :-------: | :---: | :--------: | :---------: | :-----: | :-------: | :---------------: |
-| Global 18 |   -   |   106.6    |   0.7794    |    ?    |     ?     |         ?         |
-| Local 19  |   -   |   212.6    |   0.7716    |    ?    |     ?     |         ?         |
-|  SE 15 ?  | final |   91.80    |   0.7909    |    =    |     =     |         =         |
-|   SE 05   | inter |   101.9    |   0.7771    | 60.52 M | 2*31.28 G | 1.19 s / 0.0444 s |
-|  DE 16 ?  | final |   92.86    |   0.7905    |    =    |     =     |         =         |
-|   DE 11   | allD  |   95.59    |   0.7853    |    =    |     =     |         =         |
-|   DE 08   | inter |   97.52    |   0.7876    | 57.10 M | 2*31.28 G | 1.27 s / 0.0448 s |
-|  TE 17 ?  | final |   91.06    |   0.7879    |    =    |     =     |         =         |
-|   TE 10   | allD  |   108.5    |   0.7775    |    =    |     =     |         =         |
-|   TE 09   | inter |   95.97    |   0.7850    | 53.69 M | 2*31.35 G | 1.16 s / 0.0443 s |
-
+- train.py for training, options can be found in ./options/train_options.py
+- eval.py for evaluating metrics and robustness
+- time_test.py for time testing

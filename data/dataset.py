@@ -10,11 +10,13 @@ import argparse
 from typing import List, Tuple
 
 class MyDataset(data.Dataset):
-    def __init__(self, opt:argparse.Namespace, isTrain:bool):
+    def __init__(self, opt:argparse.Namespace, isTrain:bool, inputTrans=None, labelTrans=None):
         super(MyDataset, self).__init__()
         
         self.opt = opt
         self.isTrain = isTrain
+        self.inputTrans = inputTrans
+        self.labelTrans = labelTrans
         if self.isTrain:
             self.sketchNames = getNames(os.path.join(self.opt.data_folder, self.opt.train_sketch_list))
             self.photoNames = getNames(os.path.join(self.opt.data_folder, self.opt.train_photo_list))
@@ -27,8 +29,8 @@ class MyDataset(data.Dataset):
         inputPath = os.path.join(self.opt.data_folder, self.sketchNames[index])
         labelPath = os.path.join(self.opt.data_folder, self.photoNames[index])
         
-        inputs = getInputs(inputPath, self.opt.output_shape, self.opt.pad)
-        labels = getLabels(labelPath, self.opt.output_shape, self.opt.pad)
+        inputs = getInputs(inputPath, self.opt.output_shape, self.opt.pad, self.inputTrans)
+        labels = getLabels(labelPath, self.opt.output_shape, self.opt.pad, self.labelTrans)
         
         return (inputs, labels)
     

@@ -15,11 +15,14 @@ class EvalOptions(BaseOptions):
         self.parser.add_argument('--cb_layer', type=int, default=2, help='num_layer for G combiner')
         
         # Metric
-        self.parser.add_argument('--metric', default='fid', help='choose in <fid|fsim|speed>')
+        self.parser.add_argument('--metric', default='fid', help='choose in <fid|fsim|flops|time|robust>')
+        self.parser.add_argument('--process', default='blur', help='choose in <blur|shift|rotate|scale|all>')
         
         ## Data Description
         self.parser.add_argument('--input_nc', type=int, default=1, help='number of input sketch channels')
         self.parser.add_argument('--output_nc', type=int, default=3, help='number of output photo channels')
+        self.parser.add_argument('--pad', action='store_true', help='whether to zeropad to target size')
+        self.parser.add_argument('--output_shape', type=int, default=256, help='shape of output photo')
         
         ## Dataset Path
         self.parser.add_argument('--pred_folder', default='./Saves/Images/debug/Test/400', help='the pred folder')
