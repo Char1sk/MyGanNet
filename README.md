@@ -8,6 +8,6 @@
 
 ## Usage
 
-- train.py for training, options can be found in ./options/train_options.py
-- eval.py for evaluating metrics and robustness
-- time_test.py for time testing
+- "python train.py" for training, options can be found in ./options/train_options.py
+- "python eval.py" for evaluating metrics and robustness
+- "python time_test.py" for time testing
